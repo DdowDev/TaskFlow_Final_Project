@@ -20,12 +20,14 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useParams } from 'react-router-dom'
 import PageLoadingSpinner from '~/components/Loading/PageLoadingSpinner'
 import ActiveCard from '~/components/Modal/ActiveCard/ActiveCard'
+import { selectCurrentUser } from '~/redux/user/userSlice'
 
 function Board() {
   const dispatch = useDispatch()
   // Không dùng State của component nữa mà chuyển qua dùng State của Redux
   // const [board, setBoard] = useState(null)
   const board = useSelector(selectCurrentActiveBoard)
+  const currentUser = useSelector(selectCurrentUser)
 
   const { boardId } = useParams()
 
@@ -39,6 +41,8 @@ function Board() {
    * Chỉ cần gọi API để cập nhật mảng columnOrderIds của Board chứa nó (thay đổi vị trí trong board)
    */
   const moveColumns = (dndOrderedColumns) => {
+    if (!board?.owners?.some(owner => owner._id === currentUser?._id)) return
+
     // Update cho chuẩn dữ liệu state Board
     const dndOrderedColumnsIds = dndOrderedColumns.map(c => c._id)
 
@@ -116,6 +120,8 @@ function Board() {
     return <PageLoadingSpinner caption="Loading Board..." />
   }
 
+  const isBoardOwner = board?.owners?.some(owner => owner._id === currentUser?._id)
+
   return (
     <Container disableGutters maxWidth={false} sx={{ height: '100vh' }}>
       {/* Modal Active Card, check đóng/mở dựa theo cái State isShowModalActiveCard lưu trong Redux */}
@@ -126,6 +132,7 @@ function Board() {
       <BoardBar board={board} />
       <BoardContent
         board={board}
+        canManageColumns={isBoardOwner}
         // 3 cái trường hợp move dưới đây thì giữ nguyên để code xử lý kéo thả ở phần BoardContent không bị quá dài mất kiểm soát khi đọc code, maintain.
         moveColumns={moveColumns}
         moveCardInTheSameColumn={moveCardInTheSameColumn}

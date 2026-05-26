@@ -6,10 +6,36 @@
 
 import { cardModel } from '~/models/cardModel'
 import { columnModel } from '~/models/columnModel'
+import { boardModel } from '~/models/boardModel'
 import { CloudinaryProvider } from '~/providers/CloudinaryProvider'
+import { StatusCodes } from 'http-status-codes'
+import ApiError from '~/utils/ApiError'
+import { boardPermissions } from '~/utils/boardPermissions'
 
-const createNew = async (reqBody) => {
+const getBoardOrThrow = async (boardId) => {
+  const board = await boardModel.findOneById(boardId)
+  if (!board) throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found!')
+  return board
+}
+
+const verifyBoardOwnerOrMember = (userId, board) => {
+  if (!boardPermissions.isBoardOwnerOrMember(userId, board)) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'You do not have permission to perform this action!')
+  }
+}
+
+const isSameId = (firstId, secondId) => firstId?.toString() === secondId?.toString()
+
+const createNew = async (userId, reqBody) => {
   try {
+    const board = await getBoardOrThrow(reqBody.boardId)
+    const column = await columnModel.findOneById(reqBody.columnId)
+    if (!column) throw new ApiError(StatusCodes.NOT_FOUND, 'Column not found!')
+    if (!isSameId(board._id, column.boardId)) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Column was not found in this board!')
+    }
+    verifyBoardOwnerOrMember(userId, board)
+
     // Xử lý logic dữ liệu tùy đặc thù dự án
     const newCard = {
       ...reqBody
@@ -28,6 +54,12 @@ const createNew = async (reqBody) => {
 
 const update = async (cardId, reqBody, cardCoverFile, userInfo) => {
   try {
+    const targetCard = await cardModel.findOneById(cardId)
+    if (!targetCard) throw new ApiError(StatusCodes.NOT_FOUND, 'Card not found!')
+
+    const board = await getBoardOrThrow(targetCard.boardId)
+    verifyBoardOwnerOrMember(userInfo._id, board)
+
     const updateData = {
       ...reqBody,
       updatedAt: Date.now()

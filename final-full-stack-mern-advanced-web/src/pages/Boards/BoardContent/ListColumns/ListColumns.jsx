@@ -17,7 +17,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux'
 import { cloneDeep } from 'lodash'
 
-function ListColumns({ columns }) {
+function ListColumns({ columns, canManageColumns = false }) {
   const dispatch = useDispatch()
   const board = useSelector(selectCurrentActiveBoard)
 
@@ -94,11 +94,11 @@ function ListColumns({ columns }) {
         '&::-webkit-scrollbar-track': { m: 2 }
       }}>
         {columns?.map(column =>
-          <Column key={column._id} column={column} />
+          <Column key={column._id} column={column} canManageColumns={canManageColumns} />
         )}
 
         {/* Box Add new column CTA */}
-        {!openNewColumnForm
+        {canManageColumns && (!openNewColumnForm
           ? <Box onClick={toggleOpenNewColumnForm} sx={{
             minWidth: '250px',
             maxWidth: '250px',
@@ -174,7 +174,7 @@ function ListColumns({ columns }) {
               />
             </Box>
           </Box>
-        }
+        )}
       </Box>
     </SortableContext>
   )

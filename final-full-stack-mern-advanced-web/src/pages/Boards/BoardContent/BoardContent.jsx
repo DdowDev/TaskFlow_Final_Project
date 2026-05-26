@@ -33,6 +33,7 @@ const ACTIVE_DRAG_ITEM_TYPE = {
 
 function BoardContent({
   board,
+  canManageColumns = false,
   moveColumns,
   moveCardInTheSameColumn,
   moveCardToDifferentColumn
@@ -158,6 +159,9 @@ function BoardContent({
   // Trigger khi bắt đầu kéo (drag) một phần tử
   const handleDragStart = (event) => {
     // console.log('handleDragStart: ', event)
+    const isDraggingColumn = !event?.active?.data?.current?.columnId
+    if (isDraggingColumn && !canManageColumns) return
+
     setActiveDragItemId(event?.active?.id)
     setActiveDragItemType(event?.active?.data?.current?.columnId ? ACTIVE_DRAG_ITEM_TYPE.CARD : ACTIVE_DRAG_ITEM_TYPE.COLUMN)
     setActiveDragItemData(event?.active?.data?.current)
@@ -282,7 +286,7 @@ function BoardContent({
     }
 
     // Xử lý kéo thả Columns trong một cái boardContent
-    if (activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.COLUMN) {
+    if (activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.COLUMN && canManageColumns) {
       // Nếu vị trí sau khi kéo thả khác với vị trí ban đầu
       if (active.id !== over.id) {
         // Lấy vị trí cũ (từ thằng active)
@@ -390,10 +394,10 @@ function BoardContent({
         height: (theme) => theme.trello.boardContentHeight,
         p: '10px 0'
       }}>
-        <ListColumns columns={orderedColumns} />
+        <ListColumns columns={orderedColumns} canManageColumns={canManageColumns} />
         <DragOverlay dropAnimation={customDropAnimation}>
           {!activeDragItemType && null}
-          {(activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.COLUMN) && <Column column={activeDragItemData} />}
+          {(activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.COLUMN) && <Column column={activeDragItemData} canManageColumns={canManageColumns} />}
           {(activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.CARD) && <Card card={activeDragItemData} />}
         </DragOverlay>
       </Box>

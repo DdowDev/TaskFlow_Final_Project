@@ -39,7 +39,7 @@ import {
   selectIsShowModalActiveCard
 } from '~/redux/activeCard/activeCardSlice'
 import { updateCardDetailsAPI } from '~/apis'
-import { updateCardInBoard } from '~/redux/activeBoard/activeBoardSlice'
+import { selectCurrentActiveBoard, updateCardInBoard } from '~/redux/activeBoard/activeBoardSlice'
 import { selectCurrentUser } from '~/redux/user/userSlice'
 import { CARD_MEMBER_ACTIONS } from '~/utils/constants'
 import ExitToAppIcon from '@mui/icons-material/ExitToApp'
@@ -74,6 +74,8 @@ function ActiveCard() {
   const activeCard = useSelector(selectCurrentActiveCard)
   const isShowModalActiveCard = useSelector(selectIsShowModalActiveCard)
   const currentUser = useSelector(selectCurrentUser)
+  const board = useSelector(selectCurrentActiveBoard)
+  const isBoardOwner = board?.owners?.some(owner => owner._id === currentUser?._id)
 
   // Không dùng biến State để check đóng mở Modal nữa vì chúng ta sẽ check theo cái biến isShowModalActiveCard trong redux
   // const [isOpen, setIsOpen] = useState(true)
@@ -291,7 +293,7 @@ function ActiveCard() {
               <SidebarItem><ArrowForwardOutlinedIcon fontSize="small" />Move</SidebarItem>
               <SidebarItem><ContentCopyOutlinedIcon fontSize="small" />Copy</SidebarItem>
               <SidebarItem><AutoAwesomeOutlinedIcon fontSize="small" />Make Template</SidebarItem>
-              <SidebarItem><ArchiveOutlinedIcon fontSize="small" />Archive</SidebarItem>
+              {isBoardOwner && <SidebarItem><ArchiveOutlinedIcon fontSize="small" />Archive</SidebarItem>}
               <SidebarItem><ShareOutlinedIcon fontSize="small" />Share</SidebarItem>
             </Stack>
           </Grid>

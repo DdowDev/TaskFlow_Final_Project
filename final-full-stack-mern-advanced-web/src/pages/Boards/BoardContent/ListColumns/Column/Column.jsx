@@ -31,7 +31,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { cloneDeep } from 'lodash'
 import ToggleFocusInput from '~/components/Form/ToggleFocusInput'
 
-function Column({ column }) {
+function Column({ column, canManageColumns = false }) {
   const dispatch = useDispatch()
   const board = useSelector(selectCurrentActiveBoard)
 
@@ -156,7 +156,7 @@ function Column({ column }) {
   return (
     <div ref={setNodeRef} style={dndKitColumnStyles} {...attributes}>
       <Box
-        {...listeners}
+        {...(canManageColumns ? listeners : {})}
         sx={{
           minWidth: '300px',
           maxWidth: '300px',
@@ -178,6 +178,7 @@ function Column({ column }) {
           <ToggleFocusInput
             value={column?.title}
             onChangedValue={onUpdateColumnTitle}
+            disabled={!canManageColumns}
             data-no-dnd="true"
           />
 
@@ -226,23 +227,27 @@ function Column({ column }) {
                 <ListItemIcon><ContentPaste fontSize="small" /></ListItemIcon>
                 <ListItemText>Paste</ListItemText>
               </MenuItem>
-              <Divider />
-              <MenuItem
-                onClick={handleDeleteColumn}
-                sx={{
-                  '&:hover': {
-                    color: 'warning.dark',
-                    '& .delete-forever-icon': { color: 'warning.dark' }
-                  }
-                }}
-              >
-                <ListItemIcon><DeleteForeverIcon className="delete-forever-icon" fontSize="small" /></ListItemIcon>
-                <ListItemText>Delete this column</ListItemText>
-              </MenuItem>
-              <MenuItem>
-                <ListItemIcon><Cloud fontSize="small" /></ListItemIcon>
-                <ListItemText>Archive this column</ListItemText>
-              </MenuItem>
+              {canManageColumns && <Divider />}
+              {canManageColumns &&
+                <MenuItem
+                  onClick={handleDeleteColumn}
+                  sx={{
+                    '&:hover': {
+                      color: 'warning.dark',
+                      '& .delete-forever-icon': { color: 'warning.dark' }
+                    }
+                  }}
+                >
+                  <ListItemIcon><DeleteForeverIcon className="delete-forever-icon" fontSize="small" /></ListItemIcon>
+                  <ListItemText>Delete this column</ListItemText>
+                </MenuItem>
+              }
+              {canManageColumns &&
+                <MenuItem>
+                  <ListItemIcon><Cloud fontSize="small" /></ListItemIcon>
+                  <ListItemText>Archive this column</ListItemText>
+                </MenuItem>
+              }
             </Menu>
           </Box>
         </Box>
@@ -263,9 +268,11 @@ function Column({ column }) {
               justifyContent: 'space-between'
             }}>
               <Button startIcon={<AddCardIcon />} onClick={toggleOpenNewCardForm}>Add new card</Button>
-              <Tooltip title="Drag to move">
-                <DragHandleIcon sx={{ cursor: 'pointer' }} />
-              </Tooltip>
+              {canManageColumns &&
+                <Tooltip title="Drag to move">
+                  <DragHandleIcon sx={{ cursor: 'pointer' }} />
+                </Tooltip>
+              }
             </Box>
             : <Box sx={{
               height: '100%',

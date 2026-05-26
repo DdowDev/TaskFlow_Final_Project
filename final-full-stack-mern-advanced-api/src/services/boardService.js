@@ -1,4 +1,3 @@
-/* eslint-disable no-useless-catch */
 /**
  * Updated by trungquandev.com's author on August 17 2023
  * YouTube: https://youtube.com/@trungquandev
@@ -14,6 +13,27 @@ import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { cloneDeep } from 'lodash'
 import { DEFAULT_PAGE, DEFAULT_ITEMS_PER_PAGE } from '~/utils/constants'
+import { boardPermissions } from '~/utils/boardPermissions'
+
+const getBoardOrThrow = async (boardId) => {
+  const board = await boardModel.findOneById(boardId)
+  if (!board) throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found!')
+  return board
+}
+
+const verifyBoardOwner = (userId, board) => {
+  if (!boardPermissions.isBoardOwner(userId, board)) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'You do not have permission to perform this action!')
+  }
+}
+
+const verifyBoardOwnerOrMember = (userId, board) => {
+  if (!boardPermissions.isBoardOwnerOrMember(userId, board)) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'You do not have permission to perform this action!')
+  }
+}
+
+const isSameId = (firstId, secondId) => firstId?.toString() === secondId?.toString()
 
 const createNew = async (userId, reqBody) => {
   try {
@@ -64,8 +84,11 @@ const getDetails = async (userId, boardId) => {
   } catch (error) { throw error }
 }
 
-const update = async (boardId, reqBody) => {
+const update = async (userId, boardId, reqBody) => {
   try {
+    const board = await getBoardOrThrow(boardId)
+    verifyBoardOwner(userId, board)
+
     const updateData = {
       ...reqBody,
       updatedAt: Date.now()
@@ -76,8 +99,27 @@ const update = async (boardId, reqBody) => {
   } catch (error) { throw error }
 }
 
-const moveCardToDifferentColumn = async (reqBody) => {
+const moveCardToDifferentColumn = async (userId, reqBody) => {
   try {
+    const currentCard = await cardModel.findOneById(reqBody.currentCardId)
+    if (!currentCard) throw new ApiError(StatusCodes.NOT_FOUND, 'Card not found!')
+
+    const prevColumn = await columnModel.findOneById(reqBody.prevColumnId)
+    if (!prevColumn) throw new ApiError(StatusCodes.NOT_FOUND, 'Previous column not found!')
+
+    const nextColumn = await columnModel.findOneById(reqBody.nextColumnId)
+    if (!nextColumn) throw new ApiError(StatusCodes.NOT_FOUND, 'Next column not found!')
+
+    if (
+      !isSameId(currentCard.boardId, prevColumn.boardId) ||
+      !isSameId(currentCard.boardId, nextColumn.boardId)
+    ) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Card and columns were not found in the same board!')
+    }
+
+    const board = await getBoardOrThrow(currentCard.boardId)
+    verifyBoardOwnerOrMember(userId, board)
+
     // B1: Cập nhật mảng cardOrderIds của Column ban đầu chứa nó (Hiểu bản chất là xóa cái _id của Card ra khỏi mảng)
     await columnModel.update(reqBody.prevColumnId, {
       cardOrderIds: reqBody.prevCardOrderIds,
