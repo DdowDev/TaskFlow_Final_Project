@@ -8,6 +8,10 @@ import { useSelector } from 'react-redux'
 import { selectCurrentUser } from '~/redux/user/userSlice'
 import Settings from '~/pages/Settings/Settings'
 import Boards from '~/pages/Boards'
+import AdminLayout from '~/pages/Admin/AdminLayout'
+import AdminDashboard from '~/pages/Admin/AdminDashboard'
+import AdminUsers from '~/pages/Admin/AdminUsers'
+import AdminBoards from '~/pages/Admin/AdminBoards'
 
 /**
  * Giải pháp Clean Code trong việc xác định các route nào cần đăng nhập tài khoản xong thì mới cho truy cập
@@ -19,6 +23,12 @@ import Boards from '~/pages/Boards'
 const ProtectedRoute = ({ user }) => {
   // console.log(user)
   if (!user) return <Navigate to='/login' replace={true} />
+  return <Outlet />
+}
+
+const AdminRoute = ({ user }) => {
+  if (!user) return <Navigate to='/login' replace={true} />
+  if (user.role !== 'system_admin') return <Navigate to='/boards' replace={true} />
   return <Outlet />
 }
 
@@ -45,6 +55,16 @@ function App() {
         {/* User Settings */}
         <Route path='/settings/account' element={<Settings />} />
         <Route path='/settings/security' element={<Settings />} />
+
+        {/* Admin */}
+        <Route element={<AdminRoute user={currentUser} />}>
+          <Route path='/admin' element={<AdminLayout />}>
+            <Route index element={<Navigate to='/admin/dashboard' replace={true} />} />
+            <Route path='dashboard' element={<AdminDashboard />} />
+            <Route path='users' element={<AdminUsers />} />
+            <Route path='boards' element={<AdminBoards />} />
+          </Route>
+        </Route>
       </Route>
 
       {/* Authentication */}

@@ -43,7 +43,10 @@ function LoginForm() {
     ).then(res => {
       // console.log(res)
       // Đoạn này phải kiểm tra không có lỗi (login thành công) thì mới redirect về route /
-      if (!res.error) navigate('/')
+      if (!res.error) {
+        const redirectPath = res.payload?.role === 'system_admin' ? '/admin/dashboard' : '/boards'
+        navigate(redirectPath)
+      }
     })
   }
 

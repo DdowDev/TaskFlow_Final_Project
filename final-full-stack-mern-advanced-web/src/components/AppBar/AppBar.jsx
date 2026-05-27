@@ -13,11 +13,17 @@ import Button from '@mui/material/Button'
 import Tooltip from '@mui/material/Tooltip'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
 import LibraryAddIcon from '@mui/icons-material/LibraryAdd'
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 import { Link } from 'react-router-dom'
+import { useSelector } from 'react-redux'
+import { selectCurrentUser } from '~/redux/user/userSlice'
 import Notifications from './Notifications/Notifications'
 import AutoCompleteSearchBoard from './SearchBoards/AutoCompleteSearchBoard'
 
 function AppBar() {
+  const currentUser = useSelector(selectCurrentUser)
+  const isSystemAdmin = currentUser?.role === 'system_admin'
+
   return (
     <Box sx={{
       width: '100%',
@@ -49,6 +55,22 @@ function AppBar() {
           <Recent />
           <Starred />
           <Templates />
+          {isSystemAdmin &&
+            <Button
+              component={Link}
+              to="/admin/dashboard"
+              sx={{
+                color: 'white',
+                border: 'none',
+                whiteSpace: 'nowrap',
+                '&:hover': { border: 'none', bgcolor: 'rgba(255,255,255,0.14)' }
+              }}
+              variant="outlined"
+              startIcon={<AdminPanelSettingsIcon />}
+            >
+              Admin Console
+            </Button>
+          }
           <Button
             sx={{
               color: 'white',

@@ -90,3 +90,24 @@ export const inviteUserToBoardAPI = async (data) => {
   toast.success('User invited to board successfully!')
   return response.data
 }
+
+/** Admin */
+export const fetchAdminDashboardAPI = async () => {
+  const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/admin/dashboard`)
+  return response.data
+}
+
+export const fetchAdminUsersAPI = async (searchPath = '') => {
+  const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/admin/users${searchPath}`)
+  return response.data
+}
+
+export const updateAdminUserStatusAPI = async (userId, data) => {
+  const response = await authorizedAxiosInstance.put(`${API_ROOT}/v1/admin/users/${userId}/status`, data)
+  return response.data
+}
+
+export const fetchAdminBoardsAPI = async (searchPath = '') => {
+  const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/admin/boards${searchPath}`)
+  return response.data
+}

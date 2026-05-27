@@ -14,7 +14,8 @@ function Auth() {
 
   const currentUser = useSelector(selectCurrentUser)
   if (currentUser) {
-    return <Navigate to='/' replace={true} />
+    const redirectPath = currentUser.role === 'system_admin' ? '/admin/dashboard' : '/boards'
+    return <Navigate to={redirectPath} replace={true} />
   }
 
   return (
