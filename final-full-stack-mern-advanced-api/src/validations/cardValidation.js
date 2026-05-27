@@ -7,6 +7,7 @@ import Joi from 'joi'
 import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
+import { CARD_MEMBER_ACTIONS, CARD_PRIORITIES, CARD_STATUSES } from '~/utils/constants'
 
 const createNew = async (req, res, next) => {
   const correctCondition = Joi.object({
@@ -27,7 +28,20 @@ const update = async (req, res, next) => {
   // Lưu ý không dùng hàm required() trong trường hợp Update
   const correctCondition = Joi.object({
     title: Joi.string().min(3).max(50).trim().strict(),
-    description: Joi.string().optional()
+    description: Joi.string().optional(),
+    status: Joi.string().valid(...Object.values(CARD_STATUSES)),
+    priority: Joi.string().valid(...Object.values(CARD_PRIORITIES)),
+    startDate: Joi.date().allow(null),
+    dueDate: Joi.date().allow(null),
+    commentToAdd: Joi.object({
+      userAvatar: Joi.string().allow(null, ''),
+      userDisplayName: Joi.string().allow(null, ''),
+      content: Joi.string().required().trim().strict()
+    }),
+    incomingMemberInfo: Joi.object({
+      userId: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
+      action: Joi.string().required().valid(...Object.values(CARD_MEMBER_ACTIONS))
+    })
   })
 
   try {

@@ -7,14 +7,74 @@ import CommentIcon from '@mui/icons-material/Comment'
 import AttachmentIcon from '@mui/icons-material/Attachment'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
+import Chip from '@mui/material/Chip'
+import Stack from '@mui/material/Stack'
 
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useDispatch } from 'react-redux'
 import { updateCurrentActiveCard, showModalActiveCard } from '~/redux/activeCard/activeCardSlice'
+import { CARD_PRIORITIES, CARD_STATUSES } from '~/utils/constants'
+
+const priorityChipConfig = {
+  [CARD_PRIORITIES.LOW]: { label: 'Low', color: 'default' },
+  [CARD_PRIORITIES.MEDIUM]: { label: 'Medium', color: 'primary' },
+  [CARD_PRIORITIES.HIGH]: { label: 'High', color: 'warning' },
+  [CARD_PRIORITIES.URGENT]: { label: 'Urgent', color: 'error' }
+}
+
+const statusChipConfig = {
+  [CARD_STATUSES.DONE]: { label: 'Completed', color: 'success' },
+  [CARD_STATUSES.CANCELLED]: { label: 'Cancelled', color: 'error' }
+}
+
+const toTimestamp = (value) => {
+  if (!value) return null
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date.getTime()
+}
+
+const formatShortDate = (value) => {
+  const timestamp = toTimestamp(value)
+  if (!timestamp) return null
+
+  return new Date(timestamp).toLocaleDateString('en-US', {
+    month: 'short',
+    day: '2-digit'
+  })
+}
+
+const getDateRangeLabel = (startDate, dueDate) => {
+  const startLabel = formatShortDate(startDate)
+  const dueLabel = formatShortDate(dueDate)
+
+  if (startLabel && dueLabel) return `${startLabel} - ${dueLabel}`
+  return startLabel || dueLabel || null
+}
+
+const getDueChipConfig = (card) => {
+  const dueTimestamp = toTimestamp(card?.dueDate)
+  if (!dueTimestamp || card?.status === CARD_STATUSES.DONE || card?.status === CARD_STATUSES.CANCELLED) return null
+
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  const dueDate = new Date(dueTimestamp)
+  dueDate.setHours(0, 0, 0, 0)
+  const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+  if (diffDays < 0) return { label: 'Overdue', color: 'error' }
+  if (diffDays <= 3) return { label: 'Due soon', color: 'warning' }
+  return { label: 'Due date', color: 'default' }
+}
 
 function Card({ card }) {
   const dispatch = useDispatch()
+  const priority = card?.priority || CARD_PRIORITIES.MEDIUM
+  const priorityConfig = priorityChipConfig[priority] || priorityChipConfig[CARD_PRIORITIES.MEDIUM]
+  const currentStatusConfig = statusChipConfig[card?.status]
+  const dateRangeLabel = getDateRangeLabel(card?.startDate, card?.dueDate)
+  const dueChipConfig = getDueChipConfig(card)
+  const isCompleted = card?.status === CARD_STATUSES.DONE
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card._id,
@@ -58,7 +118,48 @@ function Card({ card }) {
     >
       {card?.cover && <CardMedia sx={{ height: 140 }} image={card?.cover} /> }
       <CardContent sx={{ p: 1.5, '&:last-child': { p: 1.5 } }}>
-        <Typography>{card?.title}</Typography>
+        <Typography
+          sx={{
+            opacity: isCompleted ? 0.66 : 1,
+            textDecoration: isCompleted ? 'line-through' : 'none'
+          }}
+        >
+          {card?.title}
+        </Typography>
+        <Stack direction="row" spacing={0.75} sx={{ mt: 1, flexWrap: 'wrap', rowGap: 0.75 }}>
+          <Chip
+            size="small"
+            label={priorityConfig.label}
+            color={priorityConfig.color}
+            variant={priorityConfig.color === 'default' ? 'outlined' : 'filled'}
+            sx={{ height: 22, fontSize: '0.7rem', fontWeight: 700 }}
+          />
+          {dateRangeLabel &&
+            <Chip
+              size="small"
+              label={dateRangeLabel}
+              variant="outlined"
+              sx={{ height: 22, fontSize: '0.7rem', fontWeight: 600 }}
+            />
+          }
+          {currentStatusConfig &&
+            <Chip
+              size="small"
+              label={currentStatusConfig.label}
+              color={currentStatusConfig.color}
+              sx={{ height: 22, fontSize: '0.7rem', fontWeight: 700 }}
+            />
+          }
+          {dueChipConfig &&
+            <Chip
+              size="small"
+              label={dueChipConfig.label}
+              color={dueChipConfig.color}
+              variant={dueChipConfig.color === 'default' ? 'outlined' : 'filled'}
+              sx={{ height: 22, fontSize: '0.7rem', fontWeight: 700 }}
+            />
+          }
+        </Stack>
       </CardContent>
       {shouldShowCardActions() &&
         <CardActions sx={{ p: '0 4px 8px 4px' }}>

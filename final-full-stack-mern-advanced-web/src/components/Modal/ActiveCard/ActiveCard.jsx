@@ -1,6 +1,14 @@
+import { useState } from 'react'
 import Box from '@mui/material/Box'
 import Modal from '@mui/material/Modal'
 import Typography from '@mui/material/Typography'
+import TextField from '@mui/material/TextField'
+import MenuItem from '@mui/material/MenuItem'
+import Chip from '@mui/material/Chip'
+import Button from '@mui/material/Button'
+import IconButton from '@mui/material/IconButton'
+import Menu from '@mui/material/Menu'
+import Popover from '@mui/material/Popover'
 import CreditCardIcon from '@mui/icons-material/CreditCard'
 import CancelIcon from '@mui/icons-material/Cancel'
 import Grid from '@mui/material/Unstable_Grid2'
@@ -12,15 +20,8 @@ import TaskAltOutlinedIcon from '@mui/icons-material/TaskAltOutlined'
 import WatchLaterOutlinedIcon from '@mui/icons-material/WatchLaterOutlined'
 import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined'
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
-import AutoFixHighOutlinedIcon from '@mui/icons-material/AutoFixHighOutlined'
-import AspectRatioOutlinedIcon from '@mui/icons-material/AspectRatioOutlined'
-import AddToDriveOutlinedIcon from '@mui/icons-material/AddToDriveOutlined'
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined'
-import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined'
-import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
-import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined'
-import ArchiveOutlinedIcon from '@mui/icons-material/ArchiveOutlined'
-import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined'
+import ExitToAppIcon from '@mui/icons-material/ExitToApp'
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import SubjectRoundedIcon from '@mui/icons-material/SubjectRounded'
 import DvrOutlinedIcon from '@mui/icons-material/DvrOutlined'
 
@@ -39,13 +40,13 @@ import {
   selectIsShowModalActiveCard
 } from '~/redux/activeCard/activeCardSlice'
 import { updateCardDetailsAPI } from '~/apis'
-import { selectCurrentActiveBoard, updateCardInBoard } from '~/redux/activeBoard/activeBoardSlice'
+import { updateCardInBoard } from '~/redux/activeBoard/activeBoardSlice'
 import { selectCurrentUser } from '~/redux/user/userSlice'
-import { CARD_MEMBER_ACTIONS } from '~/utils/constants'
-import ExitToAppIcon from '@mui/icons-material/ExitToApp'
+import { CARD_MEMBER_ACTIONS, CARD_PRIORITIES, CARD_STATUSES } from '~/utils/constants'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 
 import { styled } from '@mui/material/styles'
+
 const SidebarItem = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
@@ -66,33 +67,115 @@ const SidebarItem = styled(Box)(({ theme }) => ({
   }
 }))
 
-/**
- * Note: Modal là một low-component mà bọn MUI sử dụng bên trong những thứ như Dialog, Drawer, Menu, Popover. Ở đây dĩ nhiên chúng ta có thể sử dụng Dialog cũng không thành vấn đề gì, nhưng sẽ sử dụng Modal để dễ linh hoạt tùy biến giao diện từ con số 0 cho phù hợp với mọi nhu cầu nhé.
- */
+const statusOptions = [
+  { value: CARD_STATUSES.TODO, label: 'Todo', color: 'default' },
+  { value: CARD_STATUSES.IN_PROGRESS, label: 'In Progress', color: 'primary' },
+  { value: CARD_STATUSES.IN_REVIEW, label: 'In Review', color: 'warning' },
+  { value: CARD_STATUSES.DONE, label: 'Done', color: 'success' },
+  { value: CARD_STATUSES.CANCELLED, label: 'Cancelled', color: 'error' }
+]
+
+const priorityOptions = [
+  { value: CARD_PRIORITIES.LOW, label: 'Low', color: 'default' },
+  { value: CARD_PRIORITIES.MEDIUM, label: 'Medium', color: 'primary' },
+  { value: CARD_PRIORITIES.HIGH, label: 'High', color: 'warning' },
+  { value: CARD_PRIORITIES.URGENT, label: 'Urgent', color: 'error' }
+]
+
+const getStatusConfig = (status) => {
+  return statusOptions.find(option => option.value === status) || statusOptions[0]
+}
+
+const getPriorityConfig = (priority) => {
+  return priorityOptions.find(option => option.value === priority) || priorityOptions[1]
+}
+
+const formatDateTime = (value) => {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const toDateInputValue = (value) => {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const formatShortDate = (value) => {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: '2-digit'
+  })
+}
+
+const getDateRangeLabel = (startDate, dueDate) => {
+  const startLabel = formatShortDate(startDate)
+  const dueLabel = formatShortDate(dueDate)
+
+  if (startLabel && dueLabel) return `${startLabel} - ${dueLabel}`
+  if (dueLabel) return `Due ${dueLabel}`
+  return startLabel || null
+}
+
+const isInvalidDateRange = (startDate, dueDate) => {
+  if (!startDate || !dueDate) return false
+  return new Date(startDate).getTime() > new Date(dueDate).getTime()
+}
+
+const isUserCardMember = (card, userId) => {
+  if (!userId) return false
+
+  const memberIds = Array.isArray(card?.memberIds) ? card.memberIds : []
+  const members = Array.isArray(card?.members) ? card.members : []
+
+  return memberIds.some(memberId => memberId === userId || memberId?._id === userId) ||
+    members.some(member => member === userId || member?._id === userId)
+}
+
 function ActiveCard() {
   const dispatch = useDispatch()
   const activeCard = useSelector(selectCurrentActiveCard)
   const isShowModalActiveCard = useSelector(selectIsShowModalActiveCard)
   const currentUser = useSelector(selectCurrentUser)
-  const board = useSelector(selectCurrentActiveBoard)
-  const isBoardOwner = board?.owners?.some(owner => owner._id === currentUser?._id)
+  const [activePopover, setActivePopover] = useState(null)
+  const [anchorEl, setAnchorEl] = useState(null)
+  const [dateDraft, setDateDraft] = useState({ startDate: '', dueDate: '' })
 
-  // Không dùng biến State để check đóng mở Modal nữa vì chúng ta sẽ check theo cái biến isShowModalActiveCard trong redux
-  // const [isOpen, setIsOpen] = useState(true)
-  // const handleOpenModal = () => setIsOpen(true)
+  const currentStatus = activeCard?.status || CARD_STATUSES.TODO
+  const currentPriority = activeCard?.priority || CARD_PRIORITIES.MEDIUM
+  const statusConfig = getStatusConfig(currentStatus)
+  const priorityConfig = getPriorityConfig(currentPriority)
+  const dateRangeLabel = getDateRangeLabel(activeCard?.startDate, activeCard?.dueDate)
+  const lastActivityLabel = formatDateTime(activeCard?.lastActivityAt)
+  const isCompleted = currentStatus === CARD_STATUSES.DONE
+  const isCurrentUserJoined = isUserCardMember(activeCard, currentUser?._id)
+
   const handleCloseModal = () => {
-    // setIsOpen(false)
     dispatch(clearAndHideCurrentActiveCard())
   }
 
-  // Func gọi API dùng chung cho các trường hợp update card title, description, cover, comment...vv
   const callApiUpdateCard = async (updateData) => {
     const updatedCard = await updateCardDetailsAPI(activeCard._id, updateData)
 
-    // B1: Cập nhật lại cái card đang active trong modal hiện tại
     dispatch(updateCurrentActiveCard(updatedCard))
-
-    // B2: Cập nhật lại cái bản ghi card trong cái activeBoard (nested data)
     dispatch(updateCardInBoard(updatedCard))
 
     return updatedCard
@@ -107,7 +190,6 @@ function ActiveCard() {
   }
 
   const onUploadCardCover = (event) => {
-    // console.log(event.target?.files[0])
     const error = singleFileValidator(event.target?.files[0])
     if (error) {
       toast.error(error)
@@ -116,14 +198,12 @@ function ActiveCard() {
     let reqData = new FormData()
     reqData.append('cardCover', event.target?.files[0])
 
-    // Gọi API...
     toast.promise(
       callApiUpdateCard(reqData).finally(() => event.target.value = ''),
       { pending: 'Updating...' }
     )
   }
 
-  // Dùng async await ở đây để component con CardActivitySection chờ và nếu thành công thì mới clear thẻ input comment
   const onAddCardComment = async (commentToAdd) => {
     await callApiUpdateCard({ commentToAdd })
   }
@@ -132,16 +212,103 @@ function ActiveCard() {
     callApiUpdateCard({ incomingMemberInfo })
   }
 
+  const onToggleCurrentUserMember = () => {
+    if (!currentUser?._id) return
+
+    onUpdateCardMembers({
+      userId: currentUser._id,
+      action: isCurrentUserJoined ? CARD_MEMBER_ACTIONS.REMOVE : CARD_MEMBER_ACTIONS.ADD
+    })
+  }
+
+  const handleOpenPopover = (popoverName, event) => {
+    setActivePopover(popoverName)
+    setAnchorEl(event.currentTarget)
+
+    if (popoverName === 'dates') {
+      setDateDraft({
+        startDate: toDateInputValue(activeCard?.startDate),
+        dueDate: toDateInputValue(activeCard?.dueDate)
+      })
+    }
+  }
+
+  const handleClosePopover = () => {
+    setActivePopover(null)
+    setAnchorEl(null)
+  }
+
+  const onUpdateStatus = (status) => {
+    callApiUpdateCard({ status })
+    handleClosePopover()
+  }
+
+  const onUpdatePriority = (priority) => {
+    callApiUpdateCard({ priority })
+    handleClosePopover()
+  }
+
+  const onSaveDates = () => {
+    if (isInvalidDateRange(dateDraft.startDate, dateDraft.dueDate)) {
+      toast.error('Start date must be before or equal to due date!')
+      return
+    }
+
+    callApiUpdateCard({
+      startDate: dateDraft.startDate || null,
+      dueDate: dateDraft.dueDate || null
+    })
+    handleClosePopover()
+  }
+
+  const onClearDates = () => {
+    callApiUpdateCard({ startDate: null, dueDate: null })
+    handleClosePopover()
+  }
+
+  const onToggleComplete = () => {
+    callApiUpdateCard({ status: isCompleted ? CARD_STATUSES.TODO : CARD_STATUSES.DONE })
+  }
+
+  const renderOptionChip = (option) => (
+    <Chip
+      size="small"
+      label={option.label}
+      color={option.color}
+      variant={option.color === 'default' ? 'outlined' : 'filled'}
+      sx={{ fontWeight: 700 }}
+    />
+  )
+
+  const renderComingSoonItem = (Icon, label) => (
+    <SidebarItem
+      aria-disabled="true"
+      sx={{
+        cursor: 'not-allowed',
+        opacity: 0.68,
+        '&:hover': {
+          backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#2f3542' : '#091e420f'
+        }
+      }}
+    >
+      <Icon fontSize="small" />
+      <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+        <span>{label}</span>
+        <Chip size="small" label="Coming soon" variant="outlined" sx={{ height: 20, fontSize: '0.68rem' }} />
+      </Box>
+    </SidebarItem>
+  )
+
   return (
     <Modal
       disableScrollLock
       open={isShowModalActiveCard}
-      onClose={handleCloseModal} // Sử dụng onClose trong trường hợp muốn đóng Modal bằng nút ESC hoặc click ra ngoài Modal
+      onClose={handleCloseModal}
       sx={{ overflowY: 'auto' }}>
       <Box sx={{
         position: 'relative',
         width: 900,
-        maxWidth: 900,
+        maxWidth: 'calc(100vw - 32px)',
         bgcolor: 'white',
         boxShadow: 24,
         borderRadius: '8px',
@@ -172,34 +339,34 @@ function ActiveCard() {
 
         <Box sx={{ mb: 1, mt: -3, pr: 2.5, display: 'flex', alignItems: 'center', gap: 1 }}>
           <CreditCardIcon />
+          <IconButton
+            size="small"
+            color={isCompleted ? 'success' : 'default'}
+            onClick={onToggleComplete}
+            sx={{ ml: -0.5 }}
+          >
+            {isCompleted ? <CheckCircleIcon fontSize="small" /> : <RadioButtonUncheckedIcon fontSize="small" />}
+          </IconButton>
 
-          {/* Feature 01: Xử lý tiêu đề của Card */}
-          <ToggleFocusInput
-            inputFontSize='22px'
-            value={activeCard?.title}
-            onChangedValue={onUpdateCardTitle} />
+          <Box sx={{ flex: 1, opacity: isCompleted ? 0.72 : 1 }}>
+            <ToggleFocusInput
+              inputFontSize='22px'
+              value={activeCard?.title}
+              onChangedValue={onUpdateCardTitle} />
+          </Box>
+          {isCompleted &&
+            <Chip label="Completed" color="success" size="small" sx={{ fontWeight: 700 }} />
+          }
         </Box>
 
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          {/* Left side */}
           <Grid xs={12} sm={9}>
-            <Box sx={{ mb: 3 }}>
-              <Typography sx={{ fontWeight: '600', color: 'primary.main', mb: 1 }}>Members</Typography>
-
-              {/* Feature 02: Xử lý các thành viên của Card */}
-              <CardUserGroup
-                cardMemberIds={activeCard?.memberIds}
-                onUpdateCardMembers={onUpdateCardMembers}
-              />
-            </Box>
-
             <Box sx={{ mb: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <SubjectRoundedIcon />
                 <Typography variant="span" sx={{ fontWeight: '600', fontSize: '20px' }}>Description</Typography>
               </Box>
 
-              {/* Feature 03: Xử lý mô tả của Card */}
               <CardDescriptionMdEditor
                 cardDescriptionProp={activeCard?.description}
                 handleUpdateCardDescription={onUpdateCardDescription}
@@ -212,7 +379,6 @@ function ActiveCard() {
                 <Typography variant="span" sx={{ fontWeight: '600', fontSize: '20px' }}>Activity</Typography>
               </Box>
 
-              {/* Feature 04: Xử lý các hành động, ví dụ comment vào Card */}
               <CardActivitySection
                 cardComments={activeCard?.comments}
                 onAddCardComment={onAddCardComment}
@@ -220,84 +386,172 @@ function ActiveCard() {
             </Box>
           </Grid>
 
-          {/* Right side */}
           <Grid xs={12} sm={3}>
-            <Typography sx={{ fontWeight: '600', color: 'primary.main', mb: 1 }}>Add To Card</Typography>
-            <Stack direction="column" spacing={1}>
-              {/* Feature 05: Xử lý hành động bản thân user tự join vào card */}
-              {/* Nếu user hiện tại đang đăng nhập chưa thuộc mảng memberIds của card thì mới cho hiện nút Join và ngược lại */}
-              {activeCard?.memberIds?.includes(currentUser._id)
-                ? <SidebarItem
-                  sx={{ color: 'error.light', '&:hover': { color: 'error.light' } }}
-                  onClick={() => onUpdateCardMembers({
-                    userId: currentUser._id,
-                    action: CARD_MEMBER_ACTIONS.REMOVE
-                  })}
-                >
-                  <ExitToAppIcon fontSize="small" />
-                  Leave
-                </SidebarItem>
-                : <SidebarItem
-                  className="active"
-                  onClick={() => onUpdateCardMembers({
-                    userId: currentUser._id,
-                    action: CARD_MEMBER_ACTIONS.ADD
-                  })}
-                >
-                  <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <PersonOutlineOutlinedIcon fontSize="small" />
-                      <span>Join</span>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <CheckCircleIcon fontSize="small" sx={{ color: '#27ae60' }} />
-                    </Box>
-                  </Box>
-                </SidebarItem>
-              }
+            <Box sx={{ maxHeight: 'calc(100vh - 190px)', overflowY: 'auto', pr: 0.5 }}>
+              <Typography sx={{ fontWeight: '600', color: 'primary.main', mb: 1 }}>Members</Typography>
+              <CardUserGroup
+                cardMemberIds={activeCard?.memberIds}
+                onUpdateCardMembers={onUpdateCardMembers}
+              />
 
-              {/* Feature 06: Xử lý hành động cập nhật ảnh Cover của Card */}
-              <SidebarItem className="active" component="label">
-                <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <SidebarItem
+                role="button"
+                className={isCurrentUserJoined ? undefined : 'active'}
+                onClick={onToggleCurrentUserMember}
+                sx={isCurrentUserJoined
+                  ? { mt: 1, color: 'error.light', '&:hover': { color: 'error.light' } }
+                  : { mt: 1 }
+                }
+              >
+                <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <ImageOutlinedIcon fontSize="small" />
-                    <span>Cover</span>
+                    {isCurrentUserJoined
+                      ? <ExitToAppIcon fontSize="small" />
+                      : <PersonOutlineOutlinedIcon fontSize="small" />
+                    }
+                    <span>{isCurrentUserJoined ? 'Leave' : 'Join'}</span>
                   </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  {!isCurrentUserJoined &&
                     <CheckCircleIcon fontSize="small" sx={{ color: '#27ae60' }} />
-                  </Box>
+                  }
                 </Box>
-                <VisuallyHiddenInput type="file" onChange={onUploadCardCover} />
               </SidebarItem>
 
-              <SidebarItem><AttachFileOutlinedIcon fontSize="small" />Attachment</SidebarItem>
-              <SidebarItem><LocalOfferOutlinedIcon fontSize="small" />Labels</SidebarItem>
-              <SidebarItem><TaskAltOutlinedIcon fontSize="small" />Checklist</SidebarItem>
-              <SidebarItem><WatchLaterOutlinedIcon fontSize="small" />Dates</SidebarItem>
-              <SidebarItem><AutoFixHighOutlinedIcon fontSize="small" />Custom Fields</SidebarItem>
-            </Stack>
+              <Divider sx={{ my: 2 }} />
 
-            <Divider sx={{ my: 2 }} />
+              <Typography sx={{ fontWeight: '600', color: 'primary.main', mb: 1 }}>Add to card</Typography>
+              <Stack direction="column" spacing={1}>
+                <SidebarItem onClick={(event) => handleOpenPopover('status', event)}>
+                  <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <TaskAltOutlinedIcon fontSize="small" />
+                      <span>Status</span>
+                    </Box>
+                    {renderOptionChip(statusConfig)}
+                  </Box>
+                </SidebarItem>
 
-            <Typography sx={{ fontWeight: '600', color: 'primary.main', mb: 1 }}>Power-Ups</Typography>
-            <Stack direction="column" spacing={1}>
-              <SidebarItem><AspectRatioOutlinedIcon fontSize="small" />Card Size</SidebarItem>
-              <SidebarItem><AddToDriveOutlinedIcon fontSize="small" />Google Drive</SidebarItem>
-              <SidebarItem><AddOutlinedIcon fontSize="small" />Add Power-Ups</SidebarItem>
-            </Stack>
+                <SidebarItem onClick={(event) => handleOpenPopover('priority', event)}>
+                  <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <LocalOfferOutlinedIcon fontSize="small" />
+                      <span>Priority</span>
+                    </Box>
+                    {renderOptionChip(priorityConfig)}
+                  </Box>
+                </SidebarItem>
 
-            <Divider sx={{ my: 2 }} />
+                <SidebarItem onClick={(event) => handleOpenPopover('dates', event)}>
+                  <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <WatchLaterOutlinedIcon fontSize="small" />
+                      <span>Dates</span>
+                    </Box>
+                    <Chip
+                      size="small"
+                      label={dateRangeLabel || 'Set dates'}
+                      variant="outlined"
+                      sx={{ height: 22, fontSize: '0.72rem', fontWeight: 700 }}
+                    />
+                  </Box>
+                </SidebarItem>
 
-            <Typography sx={{ fontWeight: '600', color: 'primary.main', mb: 1 }}>Actions</Typography>
-            <Stack direction="column" spacing={1}>
-              <SidebarItem><ArrowForwardOutlinedIcon fontSize="small" />Move</SidebarItem>
-              <SidebarItem><ContentCopyOutlinedIcon fontSize="small" />Copy</SidebarItem>
-              <SidebarItem><AutoAwesomeOutlinedIcon fontSize="small" />Make Template</SidebarItem>
-              {isBoardOwner && <SidebarItem><ArchiveOutlinedIcon fontSize="small" />Archive</SidebarItem>}
-              <SidebarItem><ShareOutlinedIcon fontSize="small" />Share</SidebarItem>
-            </Stack>
+                <SidebarItem className="active" component="label">
+                  <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <ImageOutlinedIcon fontSize="small" />
+                      <span>Cover</span>
+                    </Box>
+                    <CheckCircleIcon fontSize="small" sx={{ color: '#27ae60' }} />
+                  </Box>
+                  <VisuallyHiddenInput type="file" onChange={onUploadCardCover} />
+                </SidebarItem>
+
+                {renderComingSoonItem(TaskAltOutlinedIcon, 'Checklist')}
+                {renderComingSoonItem(LocalOfferOutlinedIcon, 'Labels')}
+                {renderComingSoonItem(AttachFileOutlinedIcon, 'Attachment')}
+              </Stack>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Typography sx={{ fontWeight: '600', color: 'primary.main', mb: 1 }}>Metadata</Typography>
+              <Box sx={{
+                p: 1,
+                borderRadius: '4px',
+                bgcolor: (theme) => theme.palette.mode === 'dark' ? '#2f3542' : '#091e420f'
+              }}>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>Last activity</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {lastActivityLabel || 'No activity yet'}
+                </Typography>
+              </Box>
+            </Box>
           </Grid>
         </Grid>
+
+        <Menu
+          anchorEl={anchorEl}
+          open={activePopover === 'status'}
+          onClose={handleClosePopover}
+        >
+          {statusOptions.map(option => (
+            <MenuItem
+              key={option.value}
+              selected={option.value === currentStatus}
+              onClick={() => onUpdateStatus(option.value)}
+            >
+              {renderOptionChip(option)}
+            </MenuItem>
+          ))}
+        </Menu>
+
+        <Menu
+          anchorEl={anchorEl}
+          open={activePopover === 'priority'}
+          onClose={handleClosePopover}
+        >
+          {priorityOptions.map(option => (
+            <MenuItem
+              key={option.value}
+              selected={option.value === currentPriority}
+              onClick={() => onUpdatePriority(option.value)}
+            >
+              {renderOptionChip(option)}
+            </MenuItem>
+          ))}
+        </Menu>
+
+        <Popover
+          anchorEl={anchorEl}
+          open={activePopover === 'dates'}
+          onClose={handleClosePopover}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        >
+          <Stack spacing={2} sx={{ p: 2, width: 280 }}>
+            <Typography sx={{ fontWeight: 700 }}>Dates</Typography>
+            <TextField
+              label="Start date"
+              type="date"
+              size="small"
+              value={dateDraft.startDate}
+              onChange={(event) => setDateDraft(prev => ({ ...prev, startDate: event.target.value }))}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="Due date"
+              type="date"
+              size="small"
+              value={dateDraft.dueDate}
+              onChange={(event) => setDateDraft(prev => ({ ...prev, dueDate: event.target.value }))}
+              InputLabelProps={{ shrink: true }}
+            />
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button size="small" color="inherit" onClick={onClearDates}>Clear</Button>
+              <Button size="small" variant="contained" onClick={onSaveDates}>Save</Button>
+            </Stack>
+          </Stack>
+        </Popover>
       </Box>
     </Modal>
   )
