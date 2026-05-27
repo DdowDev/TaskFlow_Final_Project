@@ -232,6 +232,48 @@ const getBoards = async (userId, page, itemsPerPage, queryFilters) => {
   } catch (error) { throw new Error(error) }
 }
 
+const getAllBoards = async (page, itemsPerPage, queryFilters) => {
+  try {
+    const queryConditions = [{ _destroy: false }]
+
+    if (queryFilters) {
+      Object.keys(queryFilters).forEach(key => {
+        if (['title', 'type'].includes(key)) {
+          queryConditions.push({ [key]: { $regex: new RegExp(queryFilters[key], 'i') } })
+        }
+      })
+    }
+
+    const query = await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate(
+      [
+        { $match: { $and: queryConditions } },
+        { $sort: { createdAt: -1 } },
+        { $facet: {
+          'queryBoards': [
+            { $skip: pagingSkipValue(page, itemsPerPage) },
+            { $limit: itemsPerPage }
+          ],
+          'queryTotalBoards': [{ $count: 'countedAllBoards' }]
+        } }
+      ],
+      { collation: { locale: 'en' } }
+    ).toArray()
+
+    const res = query[0]
+    return {
+      boards: res.queryBoards || [],
+      totalBoards: res.queryTotalBoards[0]?.countedAllBoards || 0
+    }
+  } catch (error) { throw new Error(error) }
+}
+
+const countAllBoards = async () => {
+  try {
+    const result = await GET_DB().collection(BOARD_COLLECTION_NAME).countDocuments({ _destroy: false })
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
 const pushMemberIds = async (boardId, userId) => {
   try {
     const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
@@ -253,5 +295,7 @@ export const boardModel = {
   update,
   pullColumnOrderIds,
   getBoards,
+  getAllBoards,
+  countAllBoards,
   pushMemberIds
 }

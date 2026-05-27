@@ -163,6 +163,13 @@ const updateManyComments = async (userInfo) => {
   } catch (error) { throw new Error(error) }
 }
 
+const countAllCards = async () => {
+  try {
+    const result = await GET_DB().collection(CARD_COLLECTION_NAME).countDocuments({ _destroy: false })
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
 export const cardModel = {
   CARD_COLLECTION_NAME,
   CARD_COLLECTION_SCHEMA,
@@ -172,5 +179,6 @@ export const cardModel = {
   deleteManyByColumnId,
   unshiftNewComment,
   updateMembers,
-  updateManyComments
+  updateManyComments,
+  countAllCards
 }
