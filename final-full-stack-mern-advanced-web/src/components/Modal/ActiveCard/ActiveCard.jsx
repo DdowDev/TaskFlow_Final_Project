@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Box from '@mui/material/Box'
 import Modal from '@mui/material/Modal'
 import Typography from '@mui/material/Typography'
@@ -32,6 +32,7 @@ import { toast } from 'react-toastify'
 import CardUserGroup from './CardUserGroup'
 import CardDescriptionMdEditor from './CardDescriptionMdEditor'
 import CardActivitySection from './CardActivitySection'
+import CardChecklistSection from './CardChecklistSection'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   clearAndHideCurrentActiveCard,
@@ -155,9 +156,11 @@ function ActiveCard() {
   const activeCard = useSelector(selectCurrentActiveCard)
   const isShowModalActiveCard = useSelector(selectIsShowModalActiveCard)
   const currentUser = useSelector(selectCurrentUser)
+  const checklistSectionRef = useRef(null)
   const [activePopover, setActivePopover] = useState(null)
   const [anchorEl, setAnchorEl] = useState(null)
   const [dateDraft, setDateDraft] = useState({ startDate: '', dueDate: '' })
+  const [isChecklistFormOpen, setIsChecklistFormOpen] = useState(false)
 
   const currentStatus = activeCard?.status || CARD_STATUSES.TODO
   const currentPriority = activeCard?.priority || CARD_PRIORITIES.MEDIUM
@@ -167,6 +170,7 @@ function ActiveCard() {
   const lastActivityLabel = formatDateTime(activeCard?.lastActivityAt)
   const isCompleted = currentStatus === CARD_STATUSES.DONE
   const isCurrentUserJoined = isUserCardMember(activeCard, currentUser?._id)
+  const checklists = Array.isArray(activeCard?.checklists) ? activeCard.checklists : []
 
   const handleCloseModal = () => {
     dispatch(clearAndHideCurrentActiveCard())
@@ -268,6 +272,14 @@ function ActiveCard() {
 
   const onToggleComplete = () => {
     callApiUpdateCard({ status: isCompleted ? CARD_STATUSES.TODO : CARD_STATUSES.DONE })
+  }
+
+  const onOpenChecklistSection = () => {
+    if (!checklists.length) setIsChecklistFormOpen(true)
+
+    setTimeout(() => {
+      checklistSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
   }
 
   const renderOptionChip = (option) => (
@@ -373,6 +385,15 @@ function ActiveCard() {
               />
             </Box>
 
+            <Box ref={checklistSectionRef} sx={{ mb: 3, scrollMarginTop: '24px' }}>
+              <CardChecklistSection
+                checklists={checklists}
+                isAddChecklistOpen={isChecklistFormOpen}
+                onAddChecklistOpenChange={setIsChecklistFormOpen}
+                onUpdateChecklist={callApiUpdateCard}
+              />
+            </Box>
+
             <Box sx={{ mb: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <DvrOutlinedIcon />
@@ -467,7 +488,21 @@ function ActiveCard() {
                   <VisuallyHiddenInput type="file" onChange={onUploadCardCover} />
                 </SidebarItem>
 
-                {renderComingSoonItem(TaskAltOutlinedIcon, 'Checklist')}
+                <SidebarItem onClick={onOpenChecklistSection}>
+                  <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <TaskAltOutlinedIcon fontSize="small" />
+                      <span>Checklist</span>
+                    </Box>
+                    <Chip
+                      size="small"
+                      label={checklists.length ? `${checklists.length}` : 'Add'}
+                      color={checklists.length ? 'primary' : 'default'}
+                      variant={checklists.length ? 'filled' : 'outlined'}
+                      sx={{ height: 22, fontSize: '0.72rem', fontWeight: 700 }}
+                    />
+                  </Box>
+                </SidebarItem>
                 {renderComingSoonItem(LocalOfferOutlinedIcon, 'Labels')}
                 {renderComingSoonItem(AttachFileOutlinedIcon, 'Attachment')}
               </Stack>

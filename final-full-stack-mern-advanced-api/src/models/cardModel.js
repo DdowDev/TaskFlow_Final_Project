@@ -39,13 +39,29 @@ const CARD_COLLECTION_SCHEMA = Joi.object({
     content: Joi.string(),
     commentedAt: Joi.date().timestamp()
   }).default([]),
+  checklists: Joi.array().items(
+    Joi.object({
+      _id: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
+      title: Joi.string().required().max(100).trim().strict(),
+      items: Joi.array().items(
+        Joi.object({
+          _id: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
+          title: Joi.string().required().max(200).trim().strict(),
+          isCompleted: Joi.boolean().default(false),
+          completedAt: Joi.date().timestamp('javascript').allow(null).default(null),
+          createdAt: Joi.date().timestamp('javascript').default(Date.now)
+        })
+      ).default([]),
+      createdAt: Joi.date().timestamp('javascript').default(Date.now)
+    })
+  ).default([]),
 
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').default(null),
   _destroy: Joi.boolean().default(false)
 })
 
-const INVALID_UPDATE_FIELDS = ['_id', 'boardId', 'createdBy', 'createdAt', '_destroy']
+const INVALID_UPDATE_FIELDS = ['_id', 'boardId', 'createdBy', 'createdAt', '_destroy', 'checklists']
 
 const validateBeforeCreate = async (data) => {
   return await CARD_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
@@ -136,6 +152,135 @@ const updateMembers = async (cardId, incomingMemberInfo, activityAt = Date.now()
   } catch (error) { throw new Error(error) }
 }
 
+const addChecklist = async (cardId, title, activityAt = Date.now()) => {
+  try {
+    const newChecklist = {
+      _id: new ObjectId().toString(),
+      title,
+      items: [],
+      createdAt: activityAt
+    }
+
+    const result = await GET_DB().collection(CARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(cardId) },
+      {
+        $push: { checklists: newChecklist },
+        $set: { updatedAt: activityAt, lastActivityAt: activityAt }
+      },
+      { returnDocument: 'after' }
+    )
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
+const renameChecklist = async (cardId, checklistId, title, activityAt = Date.now()) => {
+  try {
+    const result = await GET_DB().collection(CARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(cardId), 'checklists._id': checklistId },
+      {
+        $set: {
+          'checklists.$.title': title,
+          updatedAt: activityAt,
+          lastActivityAt: activityAt
+        }
+      },
+      { returnDocument: 'after' }
+    )
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
+const deleteChecklist = async (cardId, checklistId, activityAt = Date.now()) => {
+  try {
+    const result = await GET_DB().collection(CARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(cardId), 'checklists._id': checklistId },
+      {
+        $pull: { checklists: { _id: checklistId } },
+        $set: { updatedAt: activityAt, lastActivityAt: activityAt }
+      },
+      { returnDocument: 'after' }
+    )
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
+const addChecklistItem = async (cardId, checklistId, title, activityAt = Date.now()) => {
+  try {
+    const newItem = {
+      _id: new ObjectId().toString(),
+      title,
+      isCompleted: false,
+      completedAt: null,
+      createdAt: activityAt
+    }
+
+    const result = await GET_DB().collection(CARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(cardId), 'checklists._id': checklistId },
+      {
+        $push: { 'checklists.$.items': newItem },
+        $set: { updatedAt: activityAt, lastActivityAt: activityAt }
+      },
+      { returnDocument: 'after' }
+    )
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
+const renameChecklistItem = async (cardId, checklistId, itemId, title, activityAt = Date.now()) => {
+  try {
+    const result = await GET_DB().collection(CARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(cardId) },
+      {
+        $set: {
+          'checklists.$[cl].items.$[it].title': title,
+          updatedAt: activityAt,
+          lastActivityAt: activityAt
+        }
+      },
+      {
+        arrayFilters: [{ 'cl._id': checklistId }, { 'it._id': itemId }],
+        returnDocument: 'after'
+      }
+    )
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
+const toggleChecklistItem = async (cardId, checklistId, itemId, isCompleted, activityAt = Date.now()) => {
+  try {
+    const result = await GET_DB().collection(CARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(cardId) },
+      {
+        $set: {
+          'checklists.$[cl].items.$[it].isCompleted': isCompleted,
+          'checklists.$[cl].items.$[it].completedAt': isCompleted ? activityAt : null,
+          updatedAt: activityAt,
+          lastActivityAt: activityAt
+        }
+      },
+      {
+        arrayFilters: [{ 'cl._id': checklistId }, { 'it._id': itemId }],
+        returnDocument: 'after'
+      }
+    )
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
+const deleteChecklistItem = async (cardId, checklistId, itemId, activityAt = Date.now()) => {
+  try {
+    const result = await GET_DB().collection(CARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(cardId), 'checklists._id': checklistId },
+      {
+        $pull: { 'checklists.$.items': { _id: itemId } },
+        $set: { updatedAt: activityAt, lastActivityAt: activityAt }
+      },
+      { returnDocument: 'after' }
+    )
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
 const updateManyComments = async (userInfo) => {
   try {
     const result = await GET_DB().collection(CARD_COLLECTION_NAME).updateMany(
@@ -167,6 +312,13 @@ export const cardModel = {
   deleteManyByColumnId,
   unshiftNewComment,
   updateMembers,
+  addChecklist,
+  renameChecklist,
+  deleteChecklist,
+  addChecklistItem,
+  renameChecklistItem,
+  toggleChecklistItem,
+  deleteChecklistItem,
   updateManyComments,
   countAllCards
 }

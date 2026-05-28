@@ -5,6 +5,7 @@ import CardMedia from '@mui/material/CardMedia'
 import GroupIcon from '@mui/icons-material/Group'
 import CommentIcon from '@mui/icons-material/Comment'
 import AttachmentIcon from '@mui/icons-material/Attachment'
+import TaskAltOutlinedIcon from '@mui/icons-material/TaskAltOutlined'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
 import Chip from '@mui/material/Chip'
@@ -67,6 +68,16 @@ const getDueChipConfig = (card) => {
   return { label: 'Due date', color: 'default' }
 }
 
+const getChecklistStats = (card) => {
+  const checklists = Array.isArray(card?.checklists) ? card.checklists : []
+  return checklists.reduce((result, checklist) => {
+    const items = Array.isArray(checklist?.items) ? checklist.items : []
+    result.total += items.length
+    result.completed += items.filter(item => item?.isCompleted).length
+    return result
+  }, { completed: 0, total: 0 })
+}
+
 function Card({ card }) {
   const dispatch = useDispatch()
   const priority = card?.priority || CARD_PRIORITIES.MEDIUM
@@ -75,6 +86,8 @@ function Card({ card }) {
   const dateRangeLabel = getDateRangeLabel(card?.startDate, card?.dueDate)
   const dueChipConfig = getDueChipConfig(card)
   const isCompleted = card?.status === CARD_STATUSES.DONE
+  const checklistStats = getChecklistStats(card)
+  const isChecklistCompleted = checklistStats.total > 0 && checklistStats.completed === checklistStats.total
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card._id,
@@ -157,6 +170,21 @@ function Card({ card }) {
               color={dueChipConfig.color}
               variant={dueChipConfig.color === 'default' ? 'outlined' : 'filled'}
               sx={{ height: 22, fontSize: '0.7rem', fontWeight: 700 }}
+            />
+          }
+          {checklistStats.total > 0 &&
+            <Chip
+              size="small"
+              icon={<TaskAltOutlinedIcon />}
+              label={`${checklistStats.completed}/${checklistStats.total}`}
+              color={isChecklistCompleted ? 'success' : 'default'}
+              variant={isChecklistCompleted ? 'filled' : 'outlined'}
+              sx={{
+                height: 22,
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                '& .MuiChip-icon': { fontSize: 14 }
+              }}
             />
           }
         </Stack>

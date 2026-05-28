@@ -20,8 +20,22 @@ const SENSITIVE_CLIENT_UPDATE_FIELDS = [
   'createdAt',
   'completedAt',
   'lastActivityAt',
+  'checklists',
   '_destroy'
 ]
+
+const CHECKLIST_ACTION_FIELDS = [
+  'checklistToAdd',
+  'checklistToRename',
+  'checklistToDelete',
+  'checklistItemToAdd',
+  'checklistItemToRename',
+  'checklistItemToToggle',
+  'checklistItemToDelete'
+]
+
+const MAX_CHECKLISTS_PER_CARD = 5
+const MAX_ITEMS_PER_CHECKLIST = 20
 
 const getBoardOrThrow = async (boardId) => {
   const board = await boardModel.findOneById(boardId)
@@ -95,6 +109,142 @@ const applyStatusSideEffects = (targetCard, updateData, activityAt) => {
   }
 }
 
+const getCardChecklists = (card) => {
+  return Array.isArray(card?.checklists) ? card.checklists : []
+}
+
+const getChecklistOrThrow = (targetCard, checklistId) => {
+  const checklist = getCardChecklists(targetCard).find(item => item._id === checklistId)
+  if (!checklist) throw new ApiError(StatusCodes.NOT_FOUND, 'Checklist not found')
+  return checklist
+}
+
+const getChecklistItemOrThrow = (checklist, itemId) => {
+  const item = Array.isArray(checklist?.items)
+    ? checklist.items.find(checklistItem => checklistItem._id === itemId)
+    : null
+
+  if (!item) throw new ApiError(StatusCodes.NOT_FOUND, 'Checklist item not found')
+  return item
+}
+
+const normalizeChecklistTitle = (title) => title.trim()
+
+const getChecklistActionField = (updateData) => {
+  const checklistActions = CHECKLIST_ACTION_FIELDS.filter(fieldName =>
+    Object.prototype.hasOwnProperty.call(updateData, fieldName)
+  )
+
+  if (checklistActions.length > 1) {
+    throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'Only one checklist action is allowed per request!')
+  }
+
+  return checklistActions[0] || null
+}
+
+const handleChecklistAction = async (cardId, targetCard, updateData, activityAt) => {
+  const actionField = getChecklistActionField(updateData)
+  if (!actionField) return null
+
+  const actionPayload = updateData[actionField]
+  let updatedCard = null
+
+  switch (actionField) {
+  case 'checklistToAdd': {
+    if (getCardChecklists(targetCard).length >= MAX_CHECKLISTS_PER_CARD) {
+      throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'Maximum 5 checklists per card')
+    }
+
+    updatedCard = await cardModel.addChecklist(
+      cardId,
+      normalizeChecklistTitle(actionPayload.title),
+      activityAt
+    )
+    break
+  }
+
+  case 'checklistToRename': {
+    getChecklistOrThrow(targetCard, actionPayload.checklistId)
+    updatedCard = await cardModel.renameChecklist(
+      cardId,
+      actionPayload.checklistId,
+      normalizeChecklistTitle(actionPayload.title),
+      activityAt
+    )
+    break
+  }
+
+  case 'checklistToDelete': {
+    getChecklistOrThrow(targetCard, actionPayload.checklistId)
+    updatedCard = await cardModel.deleteChecklist(cardId, actionPayload.checklistId, activityAt)
+    break
+  }
+
+  case 'checklistItemToAdd': {
+    const checklist = getChecklistOrThrow(targetCard, actionPayload.checklistId)
+    const checklistItems = Array.isArray(checklist.items) ? checklist.items : []
+    if (checklistItems.length >= MAX_ITEMS_PER_CHECKLIST) {
+      throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'Maximum 20 items per checklist')
+    }
+
+    updatedCard = await cardModel.addChecklistItem(
+      cardId,
+      actionPayload.checklistId,
+      normalizeChecklistTitle(actionPayload.title),
+      activityAt
+    )
+    break
+  }
+
+  case 'checklistItemToRename': {
+    const checklist = getChecklistOrThrow(targetCard, actionPayload.checklistId)
+    getChecklistItemOrThrow(checklist, actionPayload.itemId)
+    updatedCard = await cardModel.renameChecklistItem(
+      cardId,
+      actionPayload.checklistId,
+      actionPayload.itemId,
+      normalizeChecklistTitle(actionPayload.title),
+      activityAt
+    )
+    break
+  }
+
+  case 'checklistItemToToggle': {
+    const checklist = getChecklistOrThrow(targetCard, actionPayload.checklistId)
+    getChecklistItemOrThrow(checklist, actionPayload.itemId)
+    updatedCard = await cardModel.toggleChecklistItem(
+      cardId,
+      actionPayload.checklistId,
+      actionPayload.itemId,
+      actionPayload.isCompleted,
+      activityAt
+    )
+    break
+  }
+
+  case 'checklistItemToDelete': {
+    const checklist = getChecklistOrThrow(targetCard, actionPayload.checklistId)
+    getChecklistItemOrThrow(checklist, actionPayload.itemId)
+    updatedCard = await cardModel.deleteChecklistItem(
+      cardId,
+      actionPayload.checklistId,
+      actionPayload.itemId,
+      activityAt
+    )
+    break
+  }
+
+  default:
+    return null
+  }
+
+  if (!updatedCard) {
+    throw new ApiError(StatusCodes.NOT_FOUND, actionField.includes('Item') ? 'Checklist item not found' : 'Checklist not found')
+  }
+
+  return updatedCard
+}
+
 const createNew = async (userId, reqBody) => {
   try {
     const board = await getBoardOrThrow(reqBody.boardId)
@@ -163,6 +313,9 @@ const update = async (cardId, reqBody, cardCoverFile, userInfo) => {
       } else if (updateData.incomingMemberInfo) {
         updatedCard = await cardModel.updateMembers(cardId, updateData.incomingMemberInfo, activityAt)
       } else {
+        const checklistUpdatedCard = await handleChecklistAction(cardId, targetCard, updateData, activityAt)
+        if (checklistUpdatedCard) return checklistUpdatedCard
+
         validateMergedDateRange(targetCard, updateData)
         applyStatusSideEffects(targetCard, updateData, activityAt)
 

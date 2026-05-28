@@ -9,6 +9,10 @@ import ApiError from '~/utils/ApiError'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
 import { CARD_MEMBER_ACTIONS, CARD_PRIORITIES, CARD_STATUSES } from '~/utils/constants'
 
+const checklistTitleSchema = Joi.string().trim().min(1).max(100).required()
+const checklistItemTitleSchema = Joi.string().trim().min(1).max(200).required()
+const checklistIdSchema = Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
+
 const createNew = async (req, res, next) => {
   const correctCondition = Joi.object({
     boardId: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
@@ -41,6 +45,34 @@ const update = async (req, res, next) => {
     incomingMemberInfo: Joi.object({
       userId: Joi.string().required().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
       action: Joi.string().required().valid(...Object.values(CARD_MEMBER_ACTIONS))
+    }),
+    checklistToAdd: Joi.object({
+      title: checklistTitleSchema
+    }),
+    checklistToRename: Joi.object({
+      checklistId: checklistIdSchema,
+      title: checklistTitleSchema
+    }),
+    checklistToDelete: Joi.object({
+      checklistId: checklistIdSchema
+    }),
+    checklistItemToAdd: Joi.object({
+      checklistId: checklistIdSchema,
+      title: checklistItemTitleSchema
+    }),
+    checklistItemToRename: Joi.object({
+      checklistId: checklistIdSchema,
+      itemId: checklistIdSchema,
+      title: checklistItemTitleSchema
+    }),
+    checklistItemToToggle: Joi.object({
+      checklistId: checklistIdSchema,
+      itemId: checklistIdSchema,
+      isCompleted: Joi.boolean().required()
+    }),
+    checklistItemToDelete: Joi.object({
+      checklistId: checklistIdSchema,
+      itemId: checklistIdSchema
     })
   })
 
