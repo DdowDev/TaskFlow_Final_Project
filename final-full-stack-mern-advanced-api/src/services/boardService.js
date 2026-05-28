@@ -85,6 +85,18 @@ const getDetails = async (userId, boardId) => {
   } catch (error) { throw error }
 }
 
+const getDashboard = async (userId, boardId) => {
+  try {
+    const board = await getBoardOrThrow(boardId)
+    if (board._destroy || !boardPermissions.isBoardOwnerOrMember(userId, board)) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found!')
+    }
+
+    const dashboard = await cardModel.getBoardDashboard(boardId)
+    return dashboard
+  } catch (error) { throw error }
+}
+
 const update = async (userId, boardId, reqBody) => {
   try {
     const board = await getBoardOrThrow(boardId)
@@ -178,6 +190,7 @@ const getBoards = async (userId, page, itemsPerPage, queryFilters) => {
 export const boardService = {
   createNew,
   getDetails,
+  getDashboard,
   update,
   moveCardToDifferentColumn,
   getBoards

@@ -9,6 +9,7 @@ import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE, EMAIL_RULE, EMAIL_RULE_MESSAGE } from '~/utils/validators'
 import { CARD_MEMBER_ACTIONS, CARD_PRIORITIES, CARD_STATUSES } from '~/utils/constants'
+import { userModel } from '~/models/userModel'
 
 // Define Collection (name & schema)
 const CARD_COLLECTION_NAME = 'cards'
@@ -304,6 +305,210 @@ const countAllCards = async () => {
   } catch (error) { throw new Error(error) }
 }
 
+const normalizeCountFacet = (facetResult) => facetResult?.[0]?.count || 0
+
+const normalizeGroupedCounts = (facetResult, expectedKeys, defaultKey) => {
+  return expectedKeys.map(key => ({
+    key,
+    count: facetResult.find(item => (item._id || defaultKey) === key)?.count || 0
+  }))
+}
+
+const getBoardDashboard = async (boardId) => {
+  try {
+    const now = Date.now()
+    const dueSoonLimit = now + (3 * 24 * 60 * 60 * 1000)
+    const activeCardMatch = {
+      boardId: new ObjectId(boardId),
+      _destroy: false,
+      isArchived: { $ne: true }
+    }
+
+    const userProjectionPipeline = [
+      { $project: { password: 0, verifyToken: 0 } }
+    ]
+
+    const cardListProjection = {
+      _id: 1,
+      title: 1,
+      priority: { $ifNull: ['$priority', CARD_PRIORITIES.MEDIUM] },
+      status: { $ifNull: ['$status', CARD_STATUSES.TODO] },
+      dueDate: 1,
+      memberIds: 1,
+      assignees: 1
+    }
+
+    const query = await GET_DB().collection(CARD_COLLECTION_NAME).aggregate([
+      { $match: activeCardMatch },
+      { $facet: {
+        totalCards: [{ $count: 'count' }],
+        cardsByStatus: [
+          { $group: { _id: { $ifNull: ['$status', CARD_STATUSES.TODO] }, count: { $sum: 1 } } }
+        ],
+        cardsByPriority: [
+          { $group: { _id: { $ifNull: ['$priority', CARD_PRIORITIES.MEDIUM] }, count: { $sum: 1 } } }
+        ],
+        completedCards: [
+          { $match: { status: CARD_STATUSES.DONE } },
+          { $count: 'count' }
+        ],
+        overdueCards: [
+          {
+            $match: {
+              dueDate: { $lt: now },
+              status: { $nin: [CARD_STATUSES.DONE, CARD_STATUSES.CANCELLED] }
+            }
+          },
+          { $sort: { dueDate: 1 } },
+          { $limit: 10 },
+          {
+            $lookup: {
+              from: userModel.USER_COLLECTION_NAME,
+              localField: 'memberIds',
+              foreignField: '_id',
+              as: 'assignees',
+              pipeline: userProjectionPipeline
+            }
+          },
+          { $project: cardListProjection }
+        ],
+        overdueCardsCount: [
+          {
+            $match: {
+              dueDate: { $lt: now },
+              status: { $nin: [CARD_STATUSES.DONE, CARD_STATUSES.CANCELLED] }
+            }
+          },
+          { $count: 'count' }
+        ],
+        dueSoonCards: [
+          {
+            $match: {
+              dueDate: { $gte: now, $lte: dueSoonLimit },
+              status: { $nin: [CARD_STATUSES.DONE, CARD_STATUSES.CANCELLED] }
+            }
+          },
+          { $sort: { dueDate: 1 } },
+          { $limit: 10 },
+          {
+            $lookup: {
+              from: userModel.USER_COLLECTION_NAME,
+              localField: 'memberIds',
+              foreignField: '_id',
+              as: 'assignees',
+              pipeline: userProjectionPipeline
+            }
+          },
+          { $project: cardListProjection }
+        ],
+        dueSoonCardsCount: [
+          {
+            $match: {
+              dueDate: { $gte: now, $lte: dueSoonLimit },
+              status: { $nin: [CARD_STATUSES.DONE, CARD_STATUSES.CANCELLED] }
+            }
+          },
+          { $count: 'count' }
+        ],
+        cardsWithoutDueDate: [
+          {
+            $match: {
+              $or: [{ dueDate: null }, { dueDate: { $exists: false } }],
+              status: { $nin: [CARD_STATUSES.DONE, CARD_STATUSES.CANCELLED] }
+            }
+          },
+          { $count: 'count' }
+        ],
+        checklistProgress: [
+          {
+            $project: {
+              totalItems: {
+                $reduce: {
+                  input: { $ifNull: ['$checklists', []] },
+                  initialValue: 0,
+                  in: { $add: ['$$value', { $size: { $ifNull: ['$$this.items', []] } }] }
+                }
+              },
+              completedItems: {
+                $reduce: {
+                  input: { $ifNull: ['$checklists', []] },
+                  initialValue: 0,
+                  in: {
+                    $add: [
+                      '$$value',
+                      {
+                        $size: {
+                          $filter: {
+                            input: { $ifNull: ['$$this.items', []] },
+                            as: 'item',
+                            cond: { $eq: ['$$item.isCompleted', true] }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          { $match: { totalItems: { $gt: 0 } } },
+          { $project: { progress: { $multiply: [{ $divide: ['$completedItems', '$totalItems'] }, 100] } } },
+          { $group: { _id: null, average: { $avg: '$progress' } } }
+        ],
+        memberWorkload: [
+          { $match: { memberIds: { $exists: true, $ne: [] } } },
+          { $unwind: '$memberIds' },
+          { $group: { _id: '$memberIds', totalCards: { $sum: 1 } } },
+          {
+            $lookup: {
+              from: userModel.USER_COLLECTION_NAME,
+              localField: '_id',
+              foreignField: '_id',
+              as: 'member',
+              pipeline: userProjectionPipeline
+            }
+          },
+          { $unwind: { path: '$member', preserveNullAndEmptyArrays: true } },
+          {
+            $project: {
+              _id: 0,
+              memberId: '$_id',
+              totalCards: 1,
+              displayName: '$member.displayName',
+              email: '$member.email',
+              avatar: '$member.avatar'
+            }
+          },
+          { $sort: { totalCards: -1, displayName: 1 } }
+        ]
+      } }
+    ]).toArray()
+
+    const dashboard = query[0] || {}
+    return {
+      totalCards: normalizeCountFacet(dashboard.totalCards),
+      completedCards: normalizeCountFacet(dashboard.completedCards),
+      overdueCardsCount: normalizeCountFacet(dashboard.overdueCardsCount),
+      dueSoonCardsCount: normalizeCountFacet(dashboard.dueSoonCardsCount),
+      cardsWithoutDueDate: normalizeCountFacet(dashboard.cardsWithoutDueDate),
+      averageChecklistProgress: Math.round(dashboard.checklistProgress?.[0]?.average || 0),
+      cardsByStatus: normalizeGroupedCounts(
+        dashboard.cardsByStatus || [],
+        Object.values(CARD_STATUSES),
+        CARD_STATUSES.TODO
+      ).map(item => ({ status: item.key, count: item.count })),
+      cardsByPriority: normalizeGroupedCounts(
+        dashboard.cardsByPriority || [],
+        Object.values(CARD_PRIORITIES),
+        CARD_PRIORITIES.MEDIUM
+      ).map(item => ({ priority: item.key, count: item.count })),
+      overdueCards: dashboard.overdueCards || [],
+      dueSoonCards: dashboard.dueSoonCards || [],
+      memberWorkload: dashboard.memberWorkload || []
+    }
+  } catch (error) { throw new Error(error) }
+}
+
 export const cardModel = {
   CARD_COLLECTION_NAME,
   CARD_COLLECTION_SCHEMA,
@@ -321,5 +526,6 @@ export const cardModel = {
   toggleChecklistItem,
   deleteChecklistItem,
   updateManyComments,
-  countAllCards
+  countAllCards,
+  getBoardDashboard
 }

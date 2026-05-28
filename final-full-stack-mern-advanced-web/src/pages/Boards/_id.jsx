@@ -1,8 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Container from '@mui/material/Container'
+import Box from '@mui/material/Box'
 import AppBar from '~/components/AppBar/AppBar'
 import BoardBar from './BoardBar/BoardBar'
 import BoardContent from './BoardContent/BoardContent'
+import BoardDashboard from './BoardDashboard/BoardDashboard'
 
 // import { mockData } from '~/apis/mock-data'
 import {
@@ -28,6 +30,7 @@ function Board() {
   // const [board, setBoard] = useState(null)
   const board = useSelector(selectCurrentActiveBoard)
   const currentUser = useSelector(selectCurrentUser)
+  const [activeBoardView, setActiveBoardView] = useState('kanban')
 
   const { boardId } = useParams()
 
@@ -129,15 +132,26 @@ function Board() {
 
       {/* Các thành phần còn lại của Board Details */}
       <AppBar />
-      <BoardBar board={board} />
-      <BoardContent
+      <BoardBar
         board={board}
-        canManageColumns={isBoardOwner}
-        // 3 cái trường hợp move dưới đây thì giữ nguyên để code xử lý kéo thả ở phần BoardContent không bị quá dài mất kiểm soát khi đọc code, maintain.
-        moveColumns={moveColumns}
-        moveCardInTheSameColumn={moveCardInTheSameColumn}
-        moveCardToDifferentColumn={moveCardToDifferentColumn}
+        activeView={activeBoardView}
+        onChangeView={setActiveBoardView}
       />
+
+      <Box sx={{ display: activeBoardView === 'kanban' ? 'block' : 'none' }}>
+        <BoardContent
+          board={board}
+          canManageColumns={isBoardOwner}
+          // 3 cái trường hợp move dưới đây thì giữ nguyên để code xử lý kéo thả ở phần BoardContent không bị quá dài mất kiểm soát khi đọc code, maintain.
+          moveColumns={moveColumns}
+          moveCardInTheSameColumn={moveCardInTheSameColumn}
+          moveCardToDifferentColumn={moveCardToDifferentColumn}
+        />
+      </Box>
+
+      <Box sx={{ display: activeBoardView === 'dashboard' ? 'block' : 'none' }}>
+        <BoardDashboard boardId={board._id} isActive={activeBoardView === 'dashboard'} />
+      </Box>
     </Container>
   )
 }

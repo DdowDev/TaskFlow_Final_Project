@@ -35,6 +35,15 @@ const getDetails = async (req, res, next) => {
   } catch (error) { next(error) }
 }
 
+const getDashboard = async (req, res, next) => {
+  try {
+    const userId = req.jwtDecoded._id
+    const boardId = req.params.id
+    const dashboard = await boardService.getDashboard(userId, boardId)
+    res.status(StatusCodes.OK).json(dashboard)
+  } catch (error) { next(error) }
+}
+
 const update = async (req, res, next) => {
   try {
     const userId = req.jwtDecoded._id
@@ -71,6 +80,7 @@ const getBoards = async (req, res, next) => {
 export const boardController = {
   createNew,
   getDetails,
+  getDashboard,
   update,
   moveCardToDifferentColumn,
   getBoards

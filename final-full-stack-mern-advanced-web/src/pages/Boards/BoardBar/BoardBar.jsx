@@ -5,6 +5,8 @@ import VpnLockIcon from '@mui/icons-material/VpnLock'
 import AddToDriveIcon from '@mui/icons-material/AddToDrive'
 import BoltIcon from '@mui/icons-material/Bolt'
 import FilterListIcon from '@mui/icons-material/FilterList'
+import ViewKanbanIcon from '@mui/icons-material/ViewKanban'
+import InsightsIcon from '@mui/icons-material/Insights'
 import { Tooltip } from '@mui/material'
 import { capitalizeFirstLetter } from '~/utils/formatters'
 import BoardUserGroup from './BoardUserGroup'
@@ -26,7 +28,14 @@ const MENU_STYLES = {
   }
 }
 
-function BoardBar({ board }) {
+const VIEW_CHIP_STYLES = (isActive) => ({
+  ...MENU_STYLES,
+  bgcolor: isActive ? 'rgba(255, 255, 255, 0.18)' : 'transparent',
+  border: '1px solid rgba(255, 255, 255, 0.24)',
+  fontWeight: isActive ? 700 : 500
+})
+
+function BoardBar({ board, activeView = 'kanban', onChangeView = () => {} }) {
   const currentUser = useSelector(selectCurrentUser)
   const isBoardOwner = board?.owners?.some(owner => owner._id === currentUser?._id)
 
@@ -75,6 +84,22 @@ function BoardBar({ board }) {
           label="Filters"
           clickable
         />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <Chip
+            sx={VIEW_CHIP_STYLES(activeView === 'kanban')}
+            icon={<ViewKanbanIcon />}
+            label="Kanban"
+            clickable
+            onClick={() => onChangeView('kanban')}
+          />
+          <Chip
+            sx={VIEW_CHIP_STYLES(activeView === 'dashboard')}
+            icon={<InsightsIcon />}
+            label="Dashboard"
+            clickable
+            onClick={() => onChangeView('dashboard')}
+          />
+        </Box>
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
