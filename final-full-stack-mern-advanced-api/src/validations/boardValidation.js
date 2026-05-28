@@ -18,11 +18,11 @@ const createNew = async (req, res, next) => {
    */
   const correctCondition = Joi.object({
     title: Joi.string().required().min(3).max(50).trim().strict().messages({
-      'any.required': 'Title is required (trungquandev)',
-      'string.empty': 'Title is not allowed to be empty (trungquandev)',
-      'string.min': 'Title length must be at least 3 characters long (trungquandev)',
-      'string.max': 'Title length must be less than or equal to 5 characters long (trungquandev)',
-      'string.trim': 'Title must not have leading or trailing whitespace (trungquandev)'
+      'any.required': 'Title is required',
+      'string.empty': 'Title is not allowed to be empty',
+      'string.min': 'Title length must be at least 3 characters long',
+      'string.max': 'Title length must be less than or equal to 5 characters long',
+      'string.trim': 'Title must not have leading or trailing whitespace'
     }),
     description: Joi.string().required().min(3).max(255).trim().strict(),
 

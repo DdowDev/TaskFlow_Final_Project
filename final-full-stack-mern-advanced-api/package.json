@@ -2,8 +2,8 @@
   "name": "final-full-stack-mern-advanced-api",
   "private": true,
   "version": "1.0.0",
-  "author": "TrungQuanDev - Một Lập Trình Viên",
-  "description": "https://youtube.com/@trungquandev",
+  "author": "Đỗ Đức",
+  "description": "Kanban work management system",
   "engines": {
     "node": ">=18.x"
   },
