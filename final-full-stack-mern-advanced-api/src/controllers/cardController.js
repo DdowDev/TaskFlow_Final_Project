@@ -8,8 +8,7 @@ import { cardService } from '~/services/cardService'
 
 const createNew = async (req, res, next) => {
   try {
-    const userId = req.jwtDecoded._id
-    const createdCard = await cardService.createNew(userId, req.body)
+    const createdCard = await cardService.createNew(req.jwtDecoded, req.body)
     res.status(StatusCodes.CREATED).json(createdCard)
   } catch (error) { next(error) }
 }

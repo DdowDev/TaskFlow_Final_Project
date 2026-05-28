@@ -47,8 +47,7 @@ const update = async (req, res, next) => {
 
 const moveCardToDifferentColumn = async (req, res, next) => {
   try {
-    const userId = req.jwtDecoded._id
-    const result = await boardService.moveCardToDifferentColumn(userId, req.body)
+    const result = await boardService.moveCardToDifferentColumn(req.jwtDecoded, req.body)
 
     res.status(StatusCodes.OK).json(result)
   } catch (error) { next(error) }

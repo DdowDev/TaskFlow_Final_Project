@@ -85,6 +85,11 @@ export const updateCardDetailsAPI = async (cardId, updateData) => {
   return response.data
 }
 
+export const fetchCardActivitiesAPI = async (cardId, searchPath = '') => {
+  const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/cards/${cardId}/activities${searchPath}`)
+  return response.data
+}
+
 export const inviteUserToBoardAPI = async (data) => {
   const response = await authorizedAxiosInstance.post(`${API_ROOT}/v1/invitations/board`, data)
   toast.success('User invited to board successfully!')

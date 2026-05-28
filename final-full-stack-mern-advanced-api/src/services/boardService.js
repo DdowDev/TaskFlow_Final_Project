@@ -8,11 +8,12 @@ import { slugify } from '~/utils/formatters'
 import { boardModel } from '~/models/boardModel'
 import { columnModel } from '~/models/columnModel'
 import { cardModel } from '~/models/cardModel'
+import { activityLogService } from '~/services/activityLogService'
 
 import ApiError from '~/utils/ApiError'
 import { StatusCodes } from 'http-status-codes'
 import { cloneDeep } from 'lodash'
-import { DEFAULT_PAGE, DEFAULT_ITEMS_PER_PAGE } from '~/utils/constants'
+import { CARD_ACTIVITY_ACTIONS, DEFAULT_PAGE, DEFAULT_ITEMS_PER_PAGE } from '~/utils/constants'
 import { boardPermissions } from '~/utils/boardPermissions'
 
 const getBoardOrThrow = async (boardId) => {
@@ -99,8 +100,9 @@ const update = async (userId, boardId, reqBody) => {
   } catch (error) { throw error }
 }
 
-const moveCardToDifferentColumn = async (userId, reqBody) => {
+const moveCardToDifferentColumn = async (userInfo, reqBody) => {
   try {
+    const userId = userInfo._id
     const currentCard = await cardModel.findOneById(reqBody.currentCardId)
     if (!currentCard) throw new ApiError(StatusCodes.NOT_FOUND, 'Card not found!')
 
@@ -136,6 +138,20 @@ const moveCardToDifferentColumn = async (userId, reqBody) => {
       columnId: reqBody.nextColumnId,
       updatedAt: activityAt,
       lastActivityAt: activityAt
+    })
+
+    await activityLogService.safeRecordCardActivity({
+      boardId: currentCard.boardId,
+      cardId: currentCard._id,
+      actor: userInfo,
+      action: CARD_ACTIVITY_ACTIONS.CARD_MOVED,
+      metadata: {
+        fromColumnId: prevColumn._id?.toString(),
+        fromColumnTitle: prevColumn.title || null,
+        toColumnId: nextColumn._id?.toString(),
+        toColumnTitle: nextColumn.title || null
+      },
+      createdAt: activityAt
     })
 
     return { updateResult: 'Successfully!' }

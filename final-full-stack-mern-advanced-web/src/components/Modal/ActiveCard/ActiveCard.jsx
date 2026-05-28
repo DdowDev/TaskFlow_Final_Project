@@ -401,6 +401,7 @@ function ActiveCard() {
               </Box>
 
               <CardActivitySection
+                cardId={activeCard?._id}
                 cardComments={activeCard?.comments}
                 onAddCardComment={onAddCardComment}
               />
