@@ -31,13 +31,14 @@ import { useDispatch, useSelector } from 'react-redux'
 import { cloneDeep } from 'lodash'
 import ToggleFocusInput from '~/components/Form/ToggleFocusInput'
 
-function Column({ column, canManageColumns = false }) {
+function Column({ column, canManageColumns = false, isDragDisabled = false }) {
   const dispatch = useDispatch()
   const board = useSelector(selectCurrentActiveBoard)
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: column._id,
-    data: { ...column }
+    data: { ...column },
+    disabled: isDragDisabled
   })
   const dndKitColumnStyles = {
     // touchAction: 'none', // Dành cho sensor default dạng PointerSensor
@@ -156,7 +157,7 @@ function Column({ column, canManageColumns = false }) {
   return (
     <div ref={setNodeRef} style={dndKitColumnStyles} {...attributes}>
       <Box
-        {...(canManageColumns ? listeners : {})}
+        {...(canManageColumns && !isDragDisabled ? listeners : {})}
         sx={{
           minWidth: '300px',
           maxWidth: '300px',
@@ -253,7 +254,7 @@ function Column({ column, canManageColumns = false }) {
         </Box>
 
         {/* List Cards */}
-        <ListCards cards={orderedCards} />
+        <ListCards cards={orderedCards} isDragDisabled={isDragDisabled} />
 
         {/* Box Column Footer */}
         <Box sx={{

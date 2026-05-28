@@ -34,6 +34,7 @@ const ACTIVE_DRAG_ITEM_TYPE = {
 function BoardContent({
   board,
   canManageColumns = false,
+  isDragDisabled = false,
   moveColumns,
   moveCardInTheSameColumn,
   moveCardToDifferentColumn
@@ -158,6 +159,8 @@ function BoardContent({
 
   // Trigger khi bắt đầu kéo (drag) một phần tử
   const handleDragStart = (event) => {
+    if (isDragDisabled) return
+
     // console.log('handleDragStart: ', event)
     const isDraggingColumn = !event?.active?.data?.current?.columnId
     if (isDraggingColumn && !canManageColumns) return
@@ -174,6 +177,8 @@ function BoardContent({
 
   // Trigger trong quá trình kéo (drag) một phần tử
   const handleDragOver = (event) => {
+    if (isDragDisabled) return
+
     // Không làm gì thêm nếu đang kéo Column
     if (activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.COLUMN) return
 
@@ -214,6 +219,14 @@ function BoardContent({
 
   // Trigger khi kết thúc hành động kéo (drag) một phần tử => hành động thả (drop)
   const handleDragEnd = (event) => {
+    if (isDragDisabled) {
+      setActiveDragItemId(null)
+      setActiveDragItemType(null)
+      setActiveDragItemData(null)
+      setOldColumnWhenDraggingCard(null)
+      return
+    }
+
     // console.log('handleDragEnd: ', event)
     const { active, over } = event
 
@@ -394,11 +407,11 @@ function BoardContent({
         height: (theme) => theme.trello.boardContentHeight,
         p: '10px 0'
       }}>
-        <ListColumns columns={orderedColumns} canManageColumns={canManageColumns} />
+        <ListColumns columns={orderedColumns} canManageColumns={canManageColumns} isDragDisabled={isDragDisabled} />
         <DragOverlay dropAnimation={customDropAnimation}>
           {!activeDragItemType && null}
-          {(activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.COLUMN) && <Column column={activeDragItemData} canManageColumns={canManageColumns} />}
-          {(activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.CARD) && <Card card={activeDragItemData} />}
+          {(activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.COLUMN) && <Column column={activeDragItemData} canManageColumns={canManageColumns} isDragDisabled={isDragDisabled} />}
+          {(activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.CARD) && <Card card={activeDragItemData} isDragDisabled={isDragDisabled} />}
         </DragOverlay>
       </Box>
     </DndContext>

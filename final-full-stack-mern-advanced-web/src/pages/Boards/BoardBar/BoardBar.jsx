@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import Box from '@mui/material/Box'
+import Badge from '@mui/material/Badge'
 import Chip from '@mui/material/Chip'
+import Popover from '@mui/material/Popover'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import VpnLockIcon from '@mui/icons-material/VpnLock'
 import AddToDriveIcon from '@mui/icons-material/AddToDrive'
@@ -11,6 +14,7 @@ import { Tooltip } from '@mui/material'
 import { capitalizeFirstLetter } from '~/utils/formatters'
 import BoardUserGroup from './BoardUserGroup'
 import InviteBoardUser from './InviteBoardUser'
+import BoardFilterPanel from './BoardFilterPanel'
 import { useSelector } from 'react-redux'
 import { selectCurrentUser } from '~/redux/user/userSlice'
 
@@ -35,9 +39,22 @@ const VIEW_CHIP_STYLES = (isActive) => ({
   fontWeight: isActive ? 700 : 500
 })
 
-function BoardBar({ board, activeView = 'kanban', onChangeView = () => {} }) {
+function BoardBar({
+  board,
+  activeView = 'kanban',
+  onChangeView = () => {},
+  filters = { search: '', statuses: [], priorities: [], overdue: false, dueSoon: false, assignedToMe: false },
+  onChangeFilters = () => {},
+  onClearFilters = () => {},
+  filterActiveCount = 0
+}) {
   const currentUser = useSelector(selectCurrentUser)
   const isBoardOwner = board?.owners?.some(owner => owner._id === currentUser?._id)
+  const [filterAnchorEl, setFilterAnchorEl] = useState(null)
+  const isFilterPopoverOpen = Boolean(filterAnchorEl)
+
+  const openFilterPopover = (event) => setFilterAnchorEl(event.currentTarget)
+  const closeFilterPopover = () => setFilterAnchorEl(null)
 
   return (
     <Box sx={{
@@ -78,12 +95,38 @@ function BoardBar({ board, activeView = 'kanban', onChangeView = () => {} }) {
           label="Automation"
           clickable
         />
-        <Chip
-          sx={MENU_STYLES}
-          icon={<FilterListIcon />}
-          label="Filters"
-          clickable
-        />
+        <Badge
+          color="warning"
+          badgeContent={filterActiveCount}
+          invisible={!filterActiveCount}
+        >
+          <Chip
+            sx={{
+              ...MENU_STYLES,
+              bgcolor: filterActiveCount ? 'rgba(255, 255, 255, 0.18)' : 'transparent',
+              border: filterActiveCount ? '1px solid rgba(255, 255, 255, 0.24)' : 'none',
+              fontWeight: filterActiveCount ? 700 : 500
+            }}
+            icon={<FilterListIcon />}
+            label="Filters"
+            clickable
+            onClick={openFilterPopover}
+          />
+        </Badge>
+        <Popover
+          open={isFilterPopoverOpen}
+          anchorEl={filterAnchorEl}
+          onClose={closeFilterPopover}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        >
+          <BoardFilterPanel
+            filters={filters}
+            onChangeFilters={onChangeFilters}
+            onClearFilters={onClearFilters}
+            filterActiveCount={filterActiveCount}
+          />
+        </Popover>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
           <Chip
             sx={VIEW_CHIP_STYLES(activeView === 'kanban')}

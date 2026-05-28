@@ -80,16 +80,25 @@ const getAssigneeLabel = (assignees) => {
   return `${names.slice(0, 2).join(', ')} +${names.length - 2}`
 }
 
-function StatCard({ icon, label, value, helper }) {
+function StatCard({ icon, label, value, helper, onClick }) {
   return (
     <Paper
+      onClick={onClick}
       elevation={0}
       sx={{
         p: 2,
         height: '100%',
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: 2
+        borderRadius: 2,
+        cursor: onClick ? 'pointer' : 'default',
+        transition: 'border-color 0.2s ease, transform 0.2s ease',
+        '&:hover': onClick
+          ? {
+            borderColor: 'primary.main',
+            transform: 'translateY(-1px)'
+          }
+          : {}
       }}
     >
       <Stack direction="row" spacing={1.5} alignItems="flex-start">
@@ -137,16 +146,20 @@ function ChartCard({ title, children, isEmpty }) {
   )
 }
 
-function DueCardList({ title, cards, emptyText }) {
+function DueCardList({ title, cards, emptyText, onClick }) {
   return (
     <Paper
+      onClick={onClick}
       elevation={0}
       sx={{
         p: 2,
         height: '100%',
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: 2
+        borderRadius: 2,
+        cursor: onClick ? 'pointer' : 'default',
+        transition: 'border-color 0.2s ease',
+        '&:hover': onClick ? { borderColor: 'primary.main' } : {}
       }}
     >
       <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1.5 }}>{title}</Typography>
@@ -154,7 +167,8 @@ function DueCardList({ title, cards, emptyText }) {
         ? <Typography variant="body2" color="text.secondary">{emptyText}</Typography>
         : <Stack spacing={1.25}>
           {cards.map(card => {
-            const priority = card?.priority || CARD_PRIORITIES.MEDIUM
+            const priority = card?.priority
+            const priorityLabel = priorityLabels[priority] || priority
             return (
               <Box
                 key={card._id}
@@ -169,12 +183,14 @@ function DueCardList({ title, cards, emptyText }) {
                 <Stack spacing={0.75}>
                   <Typography variant="body2" sx={{ fontWeight: 700 }}>{card?.title || 'Untitled card'}</Typography>
                   <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-                    <Chip
-                      size="small"
-                      label={priorityLabels[priority] || priority}
-                      color={priorityChipColors[priority] || 'default'}
-                      variant={priority === CARD_PRIORITIES.LOW ? 'outlined' : 'filled'}
-                    />
+                    {priorityLabel &&
+                      <Chip
+                        size="small"
+                        label={priorityLabel}
+                        color={priorityChipColors[priority] || 'default'}
+                        variant={priority === CARD_PRIORITIES.LOW ? 'outlined' : 'filled'}
+                      />
+                    }
                     <Chip size="small" variant="outlined" label={formatDate(card?.dueDate)} />
                   </Stack>
                   <Typography variant="caption" color="text.secondary">
@@ -251,7 +267,7 @@ function DashboardSkeleton() {
   )
 }
 
-function BoardDashboard({ boardId, isActive }) {
+function BoardDashboard({ boardId, isActive, onDrillDown = () => {} }) {
   const theme = useTheme()
   const [dashboard, setDashboard] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -291,6 +307,13 @@ function BoardDashboard({ boardId, isActive }) {
     [CARD_STATUSES.CANCELLED]: theme.palette.error.main
   }), [theme])
 
+  const priorityColors = useMemo(() => ({
+    [CARD_PRIORITIES.LOW]: theme.palette.grey[500],
+    [CARD_PRIORITIES.MEDIUM]: theme.palette.primary.main,
+    [CARD_PRIORITIES.HIGH]: theme.palette.warning.main,
+    [CARD_PRIORITIES.URGENT]: theme.palette.error.main
+  }), [theme])
+
   const statusChartData = useMemo(() => {
     return (dashboard?.cardsByStatus || []).map(item => ({
       ...item,
@@ -307,7 +330,11 @@ function BoardDashboard({ boardId, isActive }) {
     }))
   }, [dashboard])
 
-  const hasStatusChartData = statusChartData.some(item => item.count > 0)
+  const visibleStatusChartData = useMemo(() => {
+    return statusChartData.filter(item => item.count > 0)
+  }, [statusChartData])
+
+  const hasStatusChartData = visibleStatusChartData.length > 0
   const hasPriorityChartData = priorityChartData.some(item => item.count > 0)
   const totalCards = getNumber(dashboard?.totalCards)
 
@@ -346,10 +373,21 @@ function BoardDashboard({ boardId, isActive }) {
                 <StatCard icon={<FactCheckIcon />} label="Completed" value={getNumber(dashboard.completedCards)} />
               </Grid>
               <Grid item xs={12} sm={6} md={4} lg={2}>
-                <StatCard icon={<EventBusyIcon />} label="Overdue" value={getNumber(dashboard.overdueCardsCount)} />
+                <StatCard
+                  icon={<EventBusyIcon />}
+                  label="Overdue"
+                  value={getNumber(dashboard.overdueCardsCount)}
+                  onClick={() => onDrillDown({ overdue: true, dueSoon: false })}
+                />
               </Grid>
               <Grid item xs={12} sm={6} md={4} lg={2}>
-                <StatCard icon={<EventAvailableIcon />} label="Due Soon" value={getNumber(dashboard.dueSoonCardsCount)} helper="Next 3 days" />
+                <StatCard
+                  icon={<EventAvailableIcon />}
+                  label="Due Soon"
+                  value={getNumber(dashboard.dueSoonCardsCount)}
+                  helper="Next 3 days"
+                  onClick={() => onDrillDown({ dueSoon: true, overdue: false })}
+                />
               </Grid>
               <Grid item xs={12} sm={6} md={4} lg={2}>
                 <StatCard icon={<CalendarMonthIcon />} label="No Due Date" value={getNumber(dashboard.cardsWithoutDueDate)} />
@@ -363,7 +401,7 @@ function BoardDashboard({ boardId, isActive }) {
                   <ResponsiveContainer width="100%" height={280}>
                     <PieChart>
                       <Pie
-                        data={statusChartData}
+                        data={visibleStatusChartData}
                         dataKey="count"
                         nameKey="label"
                         innerRadius={58}
@@ -372,7 +410,7 @@ function BoardDashboard({ boardId, isActive }) {
                         isAnimationActive
                         animationDuration={900}
                       >
-                        {statusChartData.map(item => (
+                        {visibleStatusChartData.map(item => (
                           <Cell key={item.status} fill={statusColors[item.status] || theme.palette.grey[500]} />
                         ))}
                       </Pie>
@@ -397,7 +435,11 @@ function BoardDashboard({ boardId, isActive }) {
                         fill={theme.palette.primary.main}
                         isAnimationActive
                         animationDuration={900}
-                      />
+                      >
+                        {priorityChartData.map(item => (
+                          <Cell key={item.priority} fill={priorityColors[item.priority] || theme.palette.primary.main} />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -408,6 +450,7 @@ function BoardDashboard({ boardId, isActive }) {
                   title="Overdue Cards"
                   cards={dashboard.overdueCards || []}
                   emptyText="No overdue cards."
+                  onClick={() => onDrillDown({ overdue: true, dueSoon: false })}
                 />
               </Grid>
 
@@ -416,6 +459,7 @@ function BoardDashboard({ boardId, isActive }) {
                   title="Due Soon"
                   cards={dashboard.dueSoonCards || []}
                   emptyText="No cards due in the next 3 days."
+                  onClick={() => onDrillDown({ dueSoon: true, overdue: false })}
                 />
               </Grid>
 

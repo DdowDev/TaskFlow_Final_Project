@@ -78,10 +78,10 @@ const getChecklistStats = (card) => {
   }, { completed: 0, total: 0 })
 }
 
-function Card({ card }) {
+function Card({ card, isDragDisabled = false }) {
   const dispatch = useDispatch()
-  const priority = card?.priority || CARD_PRIORITIES.MEDIUM
-  const priorityConfig = priorityChipConfig[priority] || priorityChipConfig[CARD_PRIORITIES.MEDIUM]
+  const priority = card?.priority
+  const priorityConfig = priorityChipConfig[priority]
   const currentStatusConfig = statusChipConfig[card?.status]
   const dateRangeLabel = getDateRangeLabel(card?.startDate, card?.dueDate)
   const dueChipConfig = getDueChipConfig(card)
@@ -91,7 +91,8 @@ function Card({ card }) {
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card._id,
-    data: { ...card }
+    data: { ...card },
+    disabled: isDragDisabled
   })
   const dndKitCardStyles = {
     // touchAction: 'none', // Dành cho sensor default dạng PointerSensor
@@ -140,13 +141,15 @@ function Card({ card }) {
           {card?.title}
         </Typography>
         <Stack direction="row" spacing={0.75} sx={{ mt: 1, flexWrap: 'wrap', rowGap: 0.75 }}>
-          <Chip
-            size="small"
-            label={priorityConfig.label}
-            color={priorityConfig.color}
-            variant={priorityConfig.color === 'default' ? 'outlined' : 'filled'}
-            sx={{ height: 22, fontSize: '0.7rem', fontWeight: 700 }}
-          />
+          {priorityConfig &&
+            <Chip
+              size="small"
+              label={priorityConfig.label}
+              color={priorityConfig.color}
+              variant={priorityConfig.color === 'default' ? 'outlined' : 'filled'}
+              sx={{ height: 22, fontSize: '0.7rem', fontWeight: 700 }}
+            />
+          }
           {dateRangeLabel &&
             <Chip
               size="small"
