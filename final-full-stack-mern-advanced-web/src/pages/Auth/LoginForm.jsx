@@ -1,4 +1,3 @@
-// TrungQuanDev: https://youtube.com/@trungquandev
 import { Link } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -41,9 +40,11 @@ function LoginForm() {
       dispatch(loginUserAPI({ email, password })),
       { pending: 'Logging in...' }
     ).then(res => {
-      // console.log(res)
       // Đoạn này phải kiểm tra không có lỗi (login thành công) thì mới redirect về route /
-      if (!res.error) navigate('/')
+      if (!res.error) {
+        const redirectPath = res.payload?.role === 'system_admin' ? '/admin/dashboard' : '/boards'
+        navigate(redirectPath)
+      }
     })
   }
 

@@ -1,17 +1,33 @@
-/**
- * Updated by trungquandev.com's author on August 17 2023
- * YouTube: https://youtube.com/@trungquandev
- * "A bit of fragrance clings to the hand that gives flowers!"
- */
-
 import { columnModel } from '~/models/columnModel'
 import { boardModel } from '~/models/boardModel'
 import { cardModel } from '~/models/cardModel'
 import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
+import { boardPermissions } from '~/utils/boardPermissions'
 
-const createNew = async (reqBody) => {
+const getBoardOrThrow = async (boardId) => {
+  const board = await boardModel.findOneById(boardId)
+  if (!board) throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found!')
+  return board
+}
+
+const verifyBoardOwner = (userId, board) => {
+  if (!boardPermissions.isBoardOwner(userId, board)) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'You do not have permission to perform this action!')
+  }
+}
+
+const verifyBoardOwnerOrMember = (userId, board) => {
+  if (!boardPermissions.isBoardOwnerOrMember(userId, board)) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'You do not have permission to perform this action!')
+  }
+}
+
+const createNew = async (userId, reqBody) => {
   try {
+    const board = await getBoardOrThrow(reqBody.boardId)
+    verifyBoardOwner(userId, board)
+
     // Xử lý logic dữ liệu tùy đặc thù dự án
     const newColumn = {
       ...reqBody
@@ -31,8 +47,19 @@ const createNew = async (reqBody) => {
   } catch (error) { throw error }
 }
 
-const update = async (columnId, reqBody) => {
+const update = async (userId, columnId, reqBody) => {
   try {
+    const targetColumn = await columnModel.findOneById(columnId)
+    if (!targetColumn) throw new ApiError(StatusCodes.NOT_FOUND, 'Column not found!')
+
+    const board = await getBoardOrThrow(targetColumn.boardId)
+    const isCardOrderOnlyUpdate = Object.keys(reqBody).every(fieldName => fieldName === 'cardOrderIds')
+    if (isCardOrderOnlyUpdate) {
+      verifyBoardOwnerOrMember(userId, board)
+    } else {
+      verifyBoardOwner(userId, board)
+    }
+
     const updateData = {
       ...reqBody,
       updatedAt: Date.now()
@@ -43,13 +70,16 @@ const update = async (columnId, reqBody) => {
   } catch (error) { throw error }
 }
 
-const deleteItem = async (columnId) => {
+const deleteItem = async (userId, columnId) => {
   try {
     const targetColumn = await columnModel.findOneById(columnId)
 
     if (!targetColumn) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Column not found!')
     }
+
+    const board = await getBoardOrThrow(targetColumn.boardId)
+    verifyBoardOwner(userId, board)
 
     // Xóa Column
     await columnModel.deleteOneById(columnId)

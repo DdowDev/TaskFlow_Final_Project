@@ -1,4 +1,3 @@
-// TrungQuanDev: https://youtube.com/@trungquandev
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
@@ -50,7 +49,7 @@ function NotFound() {
           }}>
             &nbsp;SPACE&nbsp;
           </Typography>
-          &nbsp;<Typography variant="span" sx={{ color: '#fdba26', fontWeight: 500 }}>TrungQuanDev</Typography>?<br />Hmm, looks like that page doesn&apos;t exist.
+          &nbsp;<Typography variant="span" sx={{ color: '#fdba26', fontWeight: 500 }}>TaskFlow</Typography>?<br />Hmm, looks like that page doesn&apos;t exist.
         </Typography>
         <Box sx={{ width: '390px', height: '390px', position: 'relative' }}>
           <SvgIcon component={AstronautSvg} inheritViewBox sx={{

@@ -1,10 +1,4 @@
 /* eslint-disable no-console */
-/**
- * Updated by trungquandev.com's author on August 17 2023
- * YouTube: https://youtube.com/@trungquandev
- * "A bit of fragrance clings to the hand that gives flowers!"
- */
-
 import express from 'express'
 import cors from 'cors'
 import { corsOptions } from '~/config/cors'
@@ -94,13 +88,3 @@ const START_SERVER = () => {
     process.exit(0)
   }
 })()
-
-// // Chỉ khi Kết nối tới Database thành công thì mới Start Server Back-end lên.
-// console.log('1. Connecting to MongoDB Cloud Atlas...')
-// CONNECT_DB()
-//   .then(() => console.log('2. Connected to MongoDB Cloud Atlas!'))
-//   .then(() => START_SERVER())
-//   .catch(error => {
-//     console.error(error)
-//     process.exit(0)
-//   })

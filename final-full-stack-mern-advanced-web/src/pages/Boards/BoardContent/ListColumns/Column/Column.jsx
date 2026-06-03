@@ -31,13 +31,14 @@ import { useDispatch, useSelector } from 'react-redux'
 import { cloneDeep } from 'lodash'
 import ToggleFocusInput from '~/components/Form/ToggleFocusInput'
 
-function Column({ column }) {
+function Column({ column, canManageColumns = false, isDragDisabled = false }) {
   const dispatch = useDispatch()
   const board = useSelector(selectCurrentActiveBoard)
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: column._id,
-    data: { ...column }
+    data: { ...column },
+    disabled: isDragDisabled
   })
   const dndKitColumnStyles = {
     // touchAction: 'none', // Dành cho sensor default dạng PointerSensor
@@ -45,7 +46,7 @@ function Column({ column }) {
     // https://github.com/clauderic/dnd-kit/issues/117
     transform: CSS.Translate.toString(transform),
     transition,
-    // Chiều cao phải luôn max 100% vì nếu không sẽ lỗi lúc kéo column ngắn qua một cái column dài thì phải kéo ở khu vực giữa giữa rất khó chịu (demo ở video 32). Lưu ý lúc này phải kết hợp với {...listeners} nằm ở Box chứ không phải ở div ngoài cùng để tránh trường hợp kéo vào vùng xanh.
+    // Chiều cao phải luôn max 100% vì nếu không sẽ lỗi lúc kéo column ngắn qua một column dài. Lưu ý lúc này phải kết hợp với {...listeners} nằm ở Box chứ không phải ở div ngoài cùng để tránh trường hợp kéo vào vùng xanh.
     height: '100%',
     opacity: isDragging ? 0.5 : undefined
   }
@@ -55,7 +56,7 @@ function Column({ column }) {
   const handleClick = (event) => setAnchorEl(event.currentTarget)
   const handleClose = () => setAnchorEl(null)
 
-  // Cards đã được sắp xếp ở component cha cao nhất (boards/_id.jsx) (Video 71 đã giải thích lý do)
+  // Cards đã được sắp xếp ở component cha cao nhất (boards/_id.jsx)
   const orderedCards = column.cards
 
   const [openNewCardForm, setOpenNewCardForm] = useState(false)
@@ -86,11 +87,10 @@ function Column({ column }) {
     // Lưu ý: cách làm này phụ thuộc vào tùy lựa chọn và đặc thù dự án, có nơi thì BE sẽ hỗ trợ trả về luôn toàn bộ Board dù đây có là api tạo Column hay Card đi chăng nữa. => Lúc này FE sẽ nhàn hơn.
 
     // Tương tự hàm createNewColumn nên chỗ này dùng cloneDeep
-    // const newBoard = { ...board }
     const newBoard = cloneDeep(board)
     const columnToUpdate = newBoard.columns.find(column => column._id === createdCard.columnId)
     if (columnToUpdate) {
-      // Nếu column rỗng: bản chất là đang chứa một cái Placeholder card (Nhớ lại video 37.2, hiện tại là video 69)
+      // Nếu column rỗng: bản chất là đang chứa một cái Placeholder card
       if (columnToUpdate.cards.some(card => card.FE_PlaceholderCard)) {
         columnToUpdate.cards = [createdCard]
         columnToUpdate.cardOrderIds = [createdCard._id]
@@ -100,7 +100,6 @@ function Column({ column }) {
         columnToUpdate.cardOrderIds.push(createdCard._id)
       }
     }
-    // setBoard(newBoard)
     dispatch(updateCurrentActiveBoard(newBoard))
 
     // Đóng trạng thái thêm Card mới & Clear Input
@@ -116,14 +115,6 @@ function Column({ column }) {
       description: 'This action will permanently delete your Column and its Cards! Are you sure?',
       confirmationText: 'Confirm',
       cancellationText: 'Cancel'
-      // buttonOrder: ['confirm', 'cancel']
-      // content: 'test content hehe',
-      // allowClose: false,
-      // dialogProps: { maxWidth: 'lg' },
-      // cancellationButtonProps: { color: 'primary' },
-      // confirmationButtonProps: { color: 'success', variant: 'outlined' },
-      // description: 'Phải nhập chữ trungquandev thì mới được Confirm =))',
-      // confirmationKeyword: 'trungquandev'
     }).then(() => {
       // Update cho chuẩn dữ liệu state Board
 
@@ -131,7 +122,6 @@ function Column({ column }) {
       const newBoard = { ...board }
       newBoard.columns = newBoard.columns.filter(c => c._id !== column._id)
       newBoard.columnOrderIds = newBoard.columnOrderIds.filter(_id => _id !== column._id)
-      // setBoard(newBoard)
       dispatch(updateCurrentActiveBoard(newBoard))
 
       // Gọi API xử lý phía BE
@@ -152,11 +142,11 @@ function Column({ column }) {
     })
   }
 
-  // Phải bọc div ở đây vì vấn đề chiều cao của column khi kéo thả sẽ có bug kiểu kiểu flickering (video 32)
+  // Phải bọc div ở đây vì vấn đề chiều cao của column khi kéo thả sẽ có bug kiểu kiểu flickering
   return (
     <div ref={setNodeRef} style={dndKitColumnStyles} {...attributes}>
       <Box
-        {...listeners}
+        {...(canManageColumns && !isDragDisabled ? listeners : {})}
         sx={{
           minWidth: '300px',
           maxWidth: '300px',
@@ -178,6 +168,7 @@ function Column({ column }) {
           <ToggleFocusInput
             value={column?.title}
             onChangedValue={onUpdateColumnTitle}
+            disabled={!canManageColumns}
             data-no-dnd="true"
           />
 
@@ -226,29 +217,33 @@ function Column({ column }) {
                 <ListItemIcon><ContentPaste fontSize="small" /></ListItemIcon>
                 <ListItemText>Paste</ListItemText>
               </MenuItem>
-              <Divider />
-              <MenuItem
-                onClick={handleDeleteColumn}
-                sx={{
-                  '&:hover': {
-                    color: 'warning.dark',
-                    '& .delete-forever-icon': { color: 'warning.dark' }
-                  }
-                }}
-              >
-                <ListItemIcon><DeleteForeverIcon className="delete-forever-icon" fontSize="small" /></ListItemIcon>
-                <ListItemText>Delete this column</ListItemText>
-              </MenuItem>
-              <MenuItem>
-                <ListItemIcon><Cloud fontSize="small" /></ListItemIcon>
-                <ListItemText>Archive this column</ListItemText>
-              </MenuItem>
+              {canManageColumns && <Divider />}
+              {canManageColumns &&
+                <MenuItem
+                  onClick={handleDeleteColumn}
+                  sx={{
+                    '&:hover': {
+                      color: 'warning.dark',
+                      '& .delete-forever-icon': { color: 'warning.dark' }
+                    }
+                  }}
+                >
+                  <ListItemIcon><DeleteForeverIcon className="delete-forever-icon" fontSize="small" /></ListItemIcon>
+                  <ListItemText>Delete this column</ListItemText>
+                </MenuItem>
+              }
+              {canManageColumns &&
+                <MenuItem>
+                  <ListItemIcon><Cloud fontSize="small" /></ListItemIcon>
+                  <ListItemText>Archive this column</ListItemText>
+                </MenuItem>
+              }
             </Menu>
           </Box>
         </Box>
 
         {/* List Cards */}
-        <ListCards cards={orderedCards} />
+        <ListCards cards={orderedCards} isDragDisabled={isDragDisabled} />
 
         {/* Box Column Footer */}
         <Box sx={{
@@ -263,9 +258,11 @@ function Column({ column }) {
               justifyContent: 'space-between'
             }}>
               <Button startIcon={<AddCardIcon />} onClick={toggleOpenNewCardForm}>Add new card</Button>
-              <Tooltip title="Drag to move">
-                <DragHandleIcon sx={{ cursor: 'pointer' }} />
-              </Tooltip>
+              {canManageColumns &&
+                <Tooltip title="Drag to move">
+                  <DragHandleIcon sx={{ cursor: 'pointer' }} />
+                </Tooltip>
+              }
             </Box>
             : <Box sx={{
               height: '100%',

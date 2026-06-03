@@ -2,23 +2,7 @@ import authorizedAxiosInstance from '~/utils/authorizeAxios'
 import { API_ROOT } from '~/utils/constants'
 import { toast } from 'react-toastify'
 
-/**
- * Lưu ý: Đối với việc sử dụng axios ở khóa MERN Stack Pro trên kênh YouTube: TrungQuanDev - Một Lập Trình Viên
- * Tất cả các function bên dưới các bạn sẽ thấy mình chỉ request và lấy data từ response luôn, mà không có try catch hay then catch gì để bắt lỗi.
- * Lý do là vì ở phía Front-end chúng ta không cần thiết làm như vậy đối với mọi request bởi nó sẽ gây ra việc dư thừa code catch lỗi quá nhiều.
- * Giải pháp Clean Code gọn gàng đó là chúng ta sẽ catch lỗi tập trung tại một nơi bằng cách tận dụng một thứ cực kỳ mạnh mẽ trong axios đó là Interceptors
- * Hiểu đơn giản Interceptors là cách mà chúng ta sẽ đánh chặn vào giữa request hoặc response để xử lý logic mà chúng ta muốn.
- * (Và ở học phần MERN Stack Advance nâng cao học trực tiếp mình sẽ dạy cực kỳ đầy đủ cách xử lý, áp dụng phần này chuẩn chỉnh cho các bạn.)
- */
-
 /** Boards */
-// Đã move vào redux
-// export const fetchBoardDetailsAPI = async (boardId) => {
-//   const response = await axios.get(`${API_ROOT}/v1/boards/${boardId}`)
-//   // Lưu ý: axios sẽ trả kết quả về qua property của nó là data
-//   return response.data
-// }
-
 export const updateBoardDetailsAPI = async (boardId, updateData) => {
   const response = await authorizedAxiosInstance.put(`${API_ROOT}/v1/boards/${boardId}`, updateData)
   return response.data
@@ -26,6 +10,11 @@ export const updateBoardDetailsAPI = async (boardId, updateData) => {
 
 export const moveCardToDifferentColumnAPI = async (updateData) => {
   const response = await authorizedAxiosInstance.put(`${API_ROOT}/v1/boards/supports/moving_card`, updateData)
+  return response.data
+}
+
+export const fetchBoardDashboardAPI = async (boardId) => {
+  const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/boards/${boardId}/dashboard`)
   return response.data
 }
 
@@ -85,8 +74,34 @@ export const updateCardDetailsAPI = async (cardId, updateData) => {
   return response.data
 }
 
+export const fetchCardActivitiesAPI = async (cardId, searchPath = '') => {
+  const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/cards/${cardId}/activities${searchPath}`)
+  return response.data
+}
+
 export const inviteUserToBoardAPI = async (data) => {
   const response = await authorizedAxiosInstance.post(`${API_ROOT}/v1/invitations/board`, data)
   toast.success('User invited to board successfully!')
+  return response.data
+}
+
+/** Admin */
+export const fetchAdminDashboardAPI = async () => {
+  const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/admin/dashboard`)
+  return response.data
+}
+
+export const fetchAdminUsersAPI = async (searchPath = '') => {
+  const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/admin/users${searchPath}`)
+  return response.data
+}
+
+export const updateAdminUserStatusAPI = async (userId, data) => {
+  const response = await authorizedAxiosInstance.put(`${API_ROOT}/v1/admin/users/${userId}/status`, data)
+  return response.data
+}
+
+export const fetchAdminBoardsAPI = async (searchPath = '') => {
+  const response = await authorizedAxiosInstance.get(`${API_ROOT}/v1/admin/boards${searchPath}`)
   return response.data
 }

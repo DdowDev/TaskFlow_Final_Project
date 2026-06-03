@@ -83,11 +83,8 @@ function Notifications() {
 
   // Cập nhật trạng thái - status của một cái lời mời join board
   const updateBoardInvitation = (status, invitationId) => {
-    // console.log('status: ', status)
-    // console.log('invitationId: ', invitationId)
     dispatch(updateBoardInvitationAPI({ status, invitationId }))
       .then(res => {
-        // console.log(res)
         if (res.payload.boardInvitation.status === BOARD_INVITATION_STATUS.ACCEPTED) {
           navigate(`/boards/${res.payload.boardInvitation.boardId}`)
         }
@@ -99,8 +96,6 @@ function Notifications() {
       <Tooltip title="Notifications">
         <Badge
           color="warning"
-          // variant="none"
-          // variant="dot"
           variant={newNotification ? 'dot' : 'none'}
           sx={{ cursor: 'pointer' }}
           id="basic-button-open-notification"

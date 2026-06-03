@@ -1,7 +1,3 @@
-/**
-* YouTube: https://youtube.com/@trungquandev
-* "A bit of fragrance clings to the hand that gives flowers!"
-*/
 import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
 import { userModel } from '~/models/userModel'
@@ -9,6 +5,9 @@ import { boardModel } from '~/models/boardModel'
 import { invitationModel } from '~/models/invitationModel'
 import { INVITATION_TYPES, BOARD_INVITATION_STATUS } from '~/utils/constants'
 import { pickUser } from '~/utils/formatters'
+import { boardPermissions } from '~/utils/boardPermissions'
+
+const isSameId = (firstId, secondId) => firstId?.toString() === secondId?.toString()
 
 const createNewBoardInvitation = async (reqBody, inviterId) => {
   try {
@@ -22,6 +21,10 @@ const createNewBoardInvitation = async (reqBody, inviterId) => {
     // Nếu không tồn tại 1 trong 3 thì cứ thẳng tay reject
     if (!invitee || !inviter || !board) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Inviter, Invitee or Board not found!')
+    }
+
+    if (!boardPermissions.isBoardOwner(inviterId, board)) {
+      throw new ApiError(StatusCodes.FORBIDDEN, 'You do not have permission to invite users to this board!')
     }
 
     // Tạo data cần thiết để lưu vào trong DB
@@ -54,17 +57,8 @@ const createNewBoardInvitation = async (reqBody, inviterId) => {
 const getInvitations = async (userId) => {
   try {
     const getInvitations = await invitationModel.findByUser(userId)
-    // console.log('getInvitations: ', getInvitations)
 
     // Vì các dữ liệu inviter, invitee và board là đang ở giá trị mảng 1 phần tử nếu lấy ra được nên chúng ta biến đổi nó về Json Object trước khi trả về cho phía FE
-    // const resInvitations = getInvitations.map(i => {
-    //   return {
-    //     ...i,
-    //     inviter: i.inviter[0] || {},
-    //     invitee: i.invitee[0] || {},
-    //     board: i.board[0] || {}
-    //   }
-    // })
     const resInvitations = getInvitations.map(i => ({
       ...i,
       inviter: i.inviter[0] || {},
@@ -82,6 +76,10 @@ const updateBoardInvitation = async (userId, invitationId, status) => {
     const getInvitation = await invitationModel.findOneById(invitationId)
     if (!getInvitation) throw new ApiError(StatusCodes.NOT_FOUND, 'Invitation not found!')
 
+    if (!isSameId(getInvitation.inviteeId, userId)) {
+      throw new ApiError(StatusCodes.FORBIDDEN, 'You do not have permission to update this invitation!')
+    }
+
     // Sau khi có getInvitation rồi thì lấy full thông tin của board
     const boardId = getInvitation.boardInvitation.boardId
     const getBoard = await boardModel.findOneById(boardId)
@@ -89,8 +87,7 @@ const updateBoardInvitation = async (userId, invitationId, status) => {
 
     // Kiểm tra xem nếu status là ACCEPTED join board mà cái thằng user (invitee) đã là owner hoặc member của board rồi thì trả về thông báo lỗi luôn.
     // Note: 2 mảng memberIds và ownerIds của board nó đang là kiểu dữ liệu ObjectId nên cho nó về String hết luôn để check
-    const boardOwnerAndMemberIds = [...getBoard.ownerIds, ...getBoard.memberIds].toString()
-    if (status === BOARD_INVITATION_STATUS.ACCEPTED && boardOwnerAndMemberIds.includes(userId)) {
+    if (status === BOARD_INVITATION_STATUS.ACCEPTED && boardPermissions.isBoardOwnerOrMember(userId, getBoard)) {
       throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'You are already a member of this board.')
     }
 

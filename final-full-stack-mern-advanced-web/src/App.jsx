@@ -8,6 +8,10 @@ import { useSelector } from 'react-redux'
 import { selectCurrentUser } from '~/redux/user/userSlice'
 import Settings from '~/pages/Settings/Settings'
 import Boards from '~/pages/Boards'
+import AdminLayout from '~/pages/Admin/AdminLayout'
+import AdminDashboard from '~/pages/Admin/AdminDashboard'
+import AdminUsers from '~/pages/Admin/AdminUsers'
+import AdminBoards from '~/pages/Admin/AdminBoards'
 
 /**
  * Giải pháp Clean Code trong việc xác định các route nào cần đăng nhập tài khoản xong thì mới cho truy cập
@@ -17,13 +21,19 @@ import Boards from '~/pages/Boards'
  * https://www.robinwieruch.de/react-router-private-routes/
  */
 const ProtectedRoute = ({ user }) => {
-  // console.log(user)
   if (!user) return <Navigate to='/login' replace={true} />
+  return <Outlet />
+}
+
+const AdminRoute = ({ user }) => {
+  if (!user) return <Navigate to='/login' replace={true} />
+  if (user.role !== 'system_admin') return <Navigate to='/boards' replace={true} />
   return <Outlet />
 }
 
 function App() {
   const currentUser = useSelector(selectCurrentUser)
+  const defaultAuthenticatedPath = currentUser?.role === 'system_admin' ? '/admin/dashboard' : '/boards'
 
   return (
     <Routes>
@@ -31,7 +41,7 @@ function App() {
       <Route path='/' element={
         // Ở đây cần replace giá trị true để nó thay thế route /, có thể hiểu là route / sẽ không còn nằm trong history của Browser
         // Thực hành dễ hiểu hơn bằng cách nhấn Go Home từ trang 404 xong thử quay lại bằng nút back của trình duyệt giữa 2 trường hợp có replace hoặc không có.
-        <Navigate to="/boards" replace={true} />
+        <Navigate to={defaultAuthenticatedPath} replace={true} />
       } />
 
       {/* Protected Routes (Hiểu đơn giản trong dự án của chúng ta là những route chỉ cho truy cập sau khi đã login) */}
@@ -45,6 +55,16 @@ function App() {
         {/* User Settings */}
         <Route path='/settings/account' element={<Settings />} />
         <Route path='/settings/security' element={<Settings />} />
+
+        {/* Admin */}
+        <Route element={<AdminRoute user={currentUser} />}>
+          <Route path='/admin' element={<AdminLayout />}>
+            <Route index element={<Navigate to='/admin/dashboard' replace={true} />} />
+            <Route path='dashboard' element={<AdminDashboard />} />
+            <Route path='users' element={<AdminUsers />} />
+            <Route path='boards' element={<AdminBoards />} />
+          </Route>
+        </Route>
       </Route>
 
       {/* Authentication */}

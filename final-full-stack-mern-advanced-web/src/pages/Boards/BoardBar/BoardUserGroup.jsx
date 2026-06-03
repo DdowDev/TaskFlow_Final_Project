@@ -27,7 +27,7 @@ function BoardUserGroup({ boardUsers = [], limit = 6 }) {
             <Tooltip title={user?.displayName} key={index}>
               <Avatar
                 sx={{ width: 34, height: 34, cursor: 'pointer' }}
-                alt="trungquandev"
+                alt="User avatar"
                 src={user?.avatar}
               />
             </Tooltip>
@@ -73,7 +73,7 @@ function BoardUserGroup({ boardUsers = [], limit = 6 }) {
             <Tooltip title={user?.displayName} key={index}>
               <Avatar
                 sx={{ width: 34, height: 34, cursor: 'pointer' }}
-                alt="trungquandev"
+                alt="User avatar"
                 src={user?.avatar}
               />
             </Tooltip>

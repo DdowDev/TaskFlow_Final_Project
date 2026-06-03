@@ -10,6 +10,7 @@ import IconButton from '@mui/material/IconButton'
 import PersonAdd from '@mui/icons-material/PersonAdd'
 import Settings from '@mui/icons-material/Settings'
 import Logout from '@mui/icons-material/Logout'
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 import { useSelector, useDispatch } from 'react-redux'
 import { selectCurrentUser } from '~/redux/user/userSlice'
 import { logoutUserAPI } from '~/redux/user/userSlice'
@@ -28,6 +29,7 @@ function Profiles() {
 
   const dispatch = useDispatch()
   const currentUser = useSelector(selectCurrentUser)
+  const isSystemAdmin = currentUser?.role === 'system_admin'
 
   const confirmLogout = useConfirm()
   const handleLogout = () => {
@@ -54,7 +56,7 @@ function Profiles() {
         >
           <Avatar
             sx={{ width: 36, height: 36 }}
-            alt="TrungQuanDev"
+            alt="User avatar"
             src={currentUser?.avatar}
           />
         </IconButton>
@@ -69,11 +71,21 @@ function Profiles() {
         }}
       >
         <Link to="/settings/account" style={{ color: 'inherit' }}>
-          <MenuItem sx={{ '&:hover': { color: 'success.light' } }}>
+          <MenuItem onClick={handleClose} sx={{ '&:hover': { color: 'success.light' } }}>
             <Avatar sx={{ width: 28, height: 28, mr: 2 }} src={currentUser?.avatar} /> Profile
           </MenuItem>
         </Link>
         <Divider />
+        {isSystemAdmin &&
+          <Link to="/admin/dashboard" style={{ color: 'inherit' }}>
+            <MenuItem onClick={handleClose} sx={{ '&:hover': { color: 'primary.light' } }}>
+              <ListItemIcon>
+                <AdminPanelSettingsIcon fontSize="small" />
+              </ListItemIcon>
+              Admin
+            </MenuItem>
+          </Link>
+        }
         <MenuItem>
           <ListItemIcon>
             <PersonAdd fontSize="small" />

@@ -4,6 +4,7 @@ import PageLoadingSpinner from '~/components/Loading/PageLoadingSpinner'
 import Container from '@mui/material/Container'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
+import Button from '@mui/material/Button'
 // Grid: https://mui.com/material-ui/react-grid2/#whats-changed
 import Grid from '@mui/material/Unstable_Grid2'
 import Stack from '@mui/material/Stack'
@@ -12,16 +13,19 @@ import SpaceDashboardIcon from '@mui/icons-material/SpaceDashboard'
 import ListAltIcon from '@mui/icons-material/ListAlt'
 import HomeIcon from '@mui/icons-material/Home'
 import ArrowRightIcon from '@mui/icons-material/ArrowRight'
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 // import CardMedia from '@mui/material/CardMedia'
 import Pagination from '@mui/material/Pagination'
 import PaginationItem from '@mui/material/PaginationItem'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, Navigate, useLocation } from 'react-router-dom'
 import randomColor from 'randomcolor'
 import SidebarCreateBoardModal from './create'
 import { fetchBoardsAPI } from '~/apis'
 import { DEFAULT_PAGE, DEFAULT_ITEMS_PER_PAGE } from '~/utils/constants'
+import { useSelector } from 'react-redux'
+import { selectCurrentUser } from '~/redux/user/userSlice'
 
 import { styled } from '@mui/material/styles'
 // Styles của mấy cái Sidebar item menu, anh gom lại ra đây cho gọn.
@@ -43,6 +47,9 @@ const SidebarItem = styled(Box)(({ theme }) => ({
 }))
 
 function Boards() {
+  const currentUser = useSelector(selectCurrentUser)
+  const isSystemAdmin = currentUser?.role === 'system_admin'
+
   // Số lượng bản ghi boards hiển thị tối đa trên 1 page tùy dự án (thường sẽ là 12 cái)
   const [boards, setBoards] = useState(null)
   // Tổng toàn bộ số lượng bản ghi boards có trong Database mà phía BE trả về để FE dùng tính toán phân trang
@@ -69,20 +76,24 @@ function Boards() {
   useEffect(() => {
     // // Fake tạm 16 cái item thay cho boards
     // // [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    // setBoards([...Array(16)].map((_, i) => i))
     // // Fake tạm giả sử trong Database trả về có tổng 100 bản ghi boards
     // setTotalBoards(100)
 
     // Mỗi khi cái url thay đổi ví dụ như chúng ta chuyển trang, thì cái location.search lấy từ hook useLocation của react-router-dom cũng thay đổi theo, đồng nghĩa hàm useEffect sẽ chạy lại và fetch lại API theo đúng page mới vì cái localtion.search đã nằm trong dependencies của useEffect
-    // console.log(location.search)
 
     // Gọi API lấy danh sách boards ở đây...
-    fetchBoardsAPI(location.search).then(updateStateData)
-  }, [location.search])
+    if (!isSystemAdmin) {
+      fetchBoardsAPI(location.search).then(updateStateData)
+    }
+  }, [isSystemAdmin, location.search])
 
   const afterCreateNewBoard = () => {
     // Đơn giản là cứ fetch lại danh sách board tương tự trong useEffect
     fetchBoardsAPI(location.search).then(updateStateData)
+  }
+
+  if (isSystemAdmin) {
+    return <Navigate to="/admin/dashboard" replace={true} />
   }
 
   // Lúc chưa tồn tại boards > đang chờ gọi api thì hiện loading
@@ -120,7 +131,38 @@ function Boards() {
             <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>Your boards:</Typography>
 
             {/* Trường hợp gọi API nhưng không tồn tại cái board nào trong Database trả về */}
-            {boards?.length === 0 &&
+            {boards?.length === 0 && isSystemAdmin &&
+              <Card sx={{
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'divider',
+                maxWidth: 720
+              }}>
+                <CardContent>
+                  <Stack spacing={2} alignItems="flex-start">
+                    <AdminPanelSettingsIcon color="primary" sx={{ fontSize: 40 }} />
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                        Bạn đang đăng nhập với quyền System Admin.
+                      </Typography>
+                      <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+                        Bạn có thể vào Admin Console để quản lý người dùng, board và thống kê hệ thống.
+                      </Typography>
+                    </Box>
+                    <Button
+                      component={Link}
+                      to="/admin/dashboard"
+                      variant="contained"
+                      startIcon={<AdminPanelSettingsIcon />}
+                    >
+                      Go to Admin Console
+                    </Button>
+                  </Stack>
+                </CardContent>
+              </Card>
+            }
+
+            {boards?.length === 0 && !isSystemAdmin &&
               <Typography variant="span" sx={{ fontWeight: 'bold', mb: 3 }}>No result found!</Typography>
             }
 

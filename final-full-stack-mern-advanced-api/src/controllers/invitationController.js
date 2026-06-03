@@ -1,7 +1,3 @@
-/**
-* YouTube: https://youtube.com/@trungquandev
-* "A bit of fragrance clings to the hand that gives flowers!"
-*/
 import { StatusCodes } from 'http-status-codes'
 import { invitationService } from '~/services/invitationService'
 

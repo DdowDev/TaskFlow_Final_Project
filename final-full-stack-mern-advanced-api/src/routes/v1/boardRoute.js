@@ -1,8 +1,3 @@
-/**
- * Updated by trungquandev.com's author on August 17 2023
- * YouTube: https://youtube.com/@trungquandev
- * "A bit of fragrance clings to the hand that gives flowers!"
- */
 import express from 'express'
 import { boardValidation } from '~/validations/boardValidation'
 import { boardController } from '~/controllers/boardController'
@@ -13,6 +8,9 @@ const Router = express.Router()
 Router.route('/')
   .get(authMiddleware.isAuthorized, boardController.getBoards)
   .post(authMiddleware.isAuthorized, boardValidation.createNew, boardController.createNew)
+
+Router.route('/:id/dashboard')
+  .get(authMiddleware.isAuthorized, boardController.getDashboard)
 
 Router.route('/:id')
   .get(authMiddleware.isAuthorized, boardController.getDetails)

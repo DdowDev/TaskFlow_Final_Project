@@ -1,9 +1,3 @@
-/**
- * Updated by trungquandev.com's author on August 17 2023
- * YouTube: https://youtube.com/@trungquandev
- * "A bit of fragrance clings to the hand that gives flowers!"
- */
-
 // Param socket sẽ được lấy từ thư viên socket.io
 export const inviteUserToBoardSocket = (socket) => {
   // Lắng nghe sự kiện mà Client emit lên có tên là: FE_USER_INVITED_TO_BOARD

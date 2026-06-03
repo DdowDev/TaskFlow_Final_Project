@@ -1,9 +1,3 @@
-/**
- * Updated by trungquandev.com's author on August 17 2023
- * YouTube: https://youtube.com/@trungquandev
- * "A bit of fragrance clings to the hand that gives flowers!"
- */
-
 import express from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { boardRoute } from '~/routes/v1/boardRoute'
@@ -11,6 +5,7 @@ import { columnRoute } from '~/routes/v1/columnRoute'
 import { cardRoute } from '~/routes/v1/cardRoute'
 import { userRoute } from '~/routes/v1/userRoute'
 import { invitationRoute } from '~/routes/v1/invitationRoute'
+import { adminRoute } from '~/routes/v1/adminRoute'
 
 const Router = express.Router()
 
@@ -33,5 +28,8 @@ Router.use('/users', userRoute)
 
 /** Invitation APIs */
 Router.use('/invitations', invitationRoute)
+
+/** Admin APIs */
+Router.use('/admin', adminRoute)
 
 export const APIs_V1 = Router

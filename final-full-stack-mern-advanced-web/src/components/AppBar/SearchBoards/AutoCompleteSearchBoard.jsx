@@ -1,7 +1,3 @@
-/**
- * Author: TrungQuanDev - Một Lập Trình Viên
- * YouTube: https://youtube.com/@trungquandev
- */
 import { useState, useEffect } from 'react'
 import TextField from '@mui/material/TextField'
 import Autocomplete from '@mui/material/Autocomplete'
@@ -35,11 +31,9 @@ function AutoCompleteSearchBoard() {
   const handleInputSearchChange = (event) => {
     const searchValue = event.target?.value
     if (!searchValue) return
-    // console.log(searchValue)
 
     // Dùng createSearchParams của react-router-dom để tạo một cái searchPath chuẩn với q[title] để gọi lên API
     const searchPath = `?${createSearchParams({ 'q[title]': searchValue })}`
-    // console.log(searchPath)
 
     // Gọi API...
     setLoading(true)
@@ -58,7 +52,6 @@ function AutoCompleteSearchBoard() {
   // Khi chúng ta select chọn một cái board cụ thể thì sẽ điều hướng tới board đó luôn
   const handleSelectedBoard = (event, selectedBoard) => {
     // Phải kiểm tra nếu tồn tại một cái board cụ thể được select thì mới gọi điều hướng - navigate
-    // console.log(selectedBoard)
     if (selectedBoard) {
       navigate(`/boards/${selectedBoard._id}`)
     }
