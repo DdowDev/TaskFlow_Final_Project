@@ -18,6 +18,11 @@ export const fetchBoardDashboardAPI = async (boardId) => {
   return response.data
 }
 
+export const removeBoardMemberAPI = async (boardId, memberId) => {
+  const response = await authorizedAxiosInstance.delete(`${API_ROOT}/v1/boards/${boardId}/members/${memberId}`)
+  return response.data
+}
+
 /** Columns */
 export const createNewColumnAPI = async (newColumnData) => {
   const response = await authorizedAxiosInstance.post(`${API_ROOT}/v1/columns`, newColumnData)

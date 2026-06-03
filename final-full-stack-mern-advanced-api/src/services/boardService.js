@@ -103,6 +103,38 @@ const update = async (userId, boardId, reqBody) => {
   } catch (error) { throw error }
 }
 
+const removeMember = async (userId, boardId, memberId) => {
+  try {
+    const board = await getBoardOrThrow(boardId)
+    if (board._destroy) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found!')
+    }
+
+    verifyBoardOwner(userId, board)
+
+    if (isSameId(userId, memberId)) {
+      throw new ApiError(StatusCodes.FORBIDDEN, 'Board owner cannot remove themselves!')
+    }
+
+    if (boardPermissions.isBoardOwner(memberId, board)) {
+      throw new ApiError(StatusCodes.FORBIDDEN, 'Cannot remove a board owner!')
+    }
+
+    if (!boardPermissions.isBoardMember(memberId, board)) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Board member not found!')
+    }
+
+    const activityAt = Date.now()
+    await boardModel.pullMemberIds(boardId, memberId, activityAt)
+    await cardModel.pullMemberFromBoardCards(boardId, memberId, activityAt)
+
+    return {
+      removeResult: 'Member removed from board successfully!',
+      removedMemberId: memberId
+    }
+  } catch (error) { throw error }
+}
+
 const moveCardToDifferentColumn = async (userInfo, reqBody) => {
   try {
     const userId = userInfo._id
@@ -183,6 +215,7 @@ export const boardService = {
   getDetails,
   getDashboard,
   update,
+  removeMember,
   moveCardToDifferentColumn,
   getBoards
 }

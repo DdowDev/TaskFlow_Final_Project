@@ -148,6 +148,22 @@ const updateMembers = async (cardId, incomingMemberInfo, activityAt = Date.now()
   } catch (error) { throw new Error(error) }
 }
 
+const pullMemberFromBoardCards = async (boardId, memberId, activityAt = Date.now()) => {
+  try {
+    const result = await GET_DB().collection(CARD_COLLECTION_NAME).updateMany(
+      {
+        boardId: new ObjectId(boardId),
+        memberIds: new ObjectId(memberId)
+      },
+      {
+        $pull: { memberIds: new ObjectId(memberId) },
+        $set: { updatedAt: activityAt, lastActivityAt: activityAt }
+      }
+    )
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
 const addChecklist = async (cardId, title, activityAt = Date.now()) => {
   try {
     const newChecklist = {
@@ -512,6 +528,7 @@ export const cardModel = {
   deleteManyByColumnId,
   unshiftNewComment,
   updateMembers,
+  pullMemberFromBoardCards,
   addChecklist,
   renameChecklist,
   deleteChecklist,

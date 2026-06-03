@@ -270,6 +270,20 @@ const pushMemberIds = async (boardId, userId) => {
   } catch (error) { throw new Error(error) }
 }
 
+const pullMemberIds = async (boardId, userId, updatedAt = Date.now()) => {
+  try {
+    const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(boardId) },
+      {
+        $pull: { memberIds: new ObjectId(userId) },
+        $set: { updatedAt }
+      },
+      { returnDocument: 'after' }
+    )
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
 export const boardModel = {
   BOARD_COLLECTION_NAME,
   BOARD_COLLECTION_SCHEMA,
@@ -282,5 +296,6 @@ export const boardModel = {
   getBoards,
   getAllBoards,
   countAllBoards,
-  pushMemberIds
+  pushMemberIds,
+  pullMemberIds
 }

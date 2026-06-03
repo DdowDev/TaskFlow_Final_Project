@@ -30,6 +30,7 @@ import ViewKanbanIcon from '@mui/icons-material/ViewKanban'
 import InsightsIcon from '@mui/icons-material/Insights'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts'
+import PersonRemoveIcon from '@mui/icons-material/PersonRemove'
 import { Tooltip } from '@mui/material'
 import { capitalizeFirstLetter } from '~/utils/formatters'
 import BoardUserGroup from './BoardUserGroup'
@@ -37,9 +38,10 @@ import InviteBoardUser from './InviteBoardUser'
 import BoardFilterPanel from './BoardFilterPanel'
 import { useDispatch, useSelector } from 'react-redux'
 import { selectCurrentUser } from '~/redux/user/userSlice'
-import { updateCurrentActiveBoard } from '~/redux/activeBoard/activeBoardSlice'
-import { updateBoardDetailsAPI } from '~/apis'
+import { fetchBoardDetailsAPI, updateCurrentActiveBoard } from '~/redux/activeBoard/activeBoardSlice'
+import { removeBoardMemberAPI, updateBoardDetailsAPI } from '~/apis'
 import { toast } from 'react-toastify'
+import { useConfirm } from 'material-ui-confirm'
 
 const MENU_STYLES = {
   color: 'white',
@@ -79,6 +81,7 @@ const BOARD_TYPES = {
 }
 
 const getUserDisplayName = (user) => user?.displayName || user?.username || user?.email || 'Unknown user'
+const getUserId = (user) => user?._id?.toString?.() || user?._id
 
 const formatBoardDate = (value) => {
   if (!value) return '-'
@@ -94,7 +97,7 @@ const formatBoardDate = (value) => {
   })
 }
 
-function BoardUserList({ title, users = [], emptyText }) {
+function BoardUserList({ title, users = [], emptyText, canRemove = false, removingUserId = null, onRemoveUser }) {
   return (
     <Box>
       <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1 }}>
@@ -104,27 +107,56 @@ function BoardUserList({ title, users = [], emptyText }) {
       {users.length === 0
         ? <Typography variant="body2" color="text.secondary">{emptyText}</Typography>
         : <List dense sx={{ py: 0 }}>
-          {users.map(user => (
-            <ListItem key={user?._id || user?.email} disableGutters>
-              <ListItemAvatar sx={{ minWidth: 44 }}>
-                <Avatar src={user?.avatar} alt="User avatar" sx={{ width: 34, height: 34 }}>
-                  {getUserDisplayName(user).charAt(0).toUpperCase()}
-                </Avatar>
-              </ListItemAvatar>
-              <ListItemText
-                primary={getUserDisplayName(user)}
-                secondary={user?.email || '-'}
-                primaryTypographyProps={{ fontWeight: 700 }}
-              />
-            </ListItem>
-          ))}
+          {users.map(user => {
+            const userId = getUserId(user)
+            const isRemoving = removingUserId === userId
+
+            return (
+              <ListItem
+                key={userId || user?.email}
+                disableGutters
+                secondaryAction={canRemove &&
+                  <Button
+                    size="small"
+                    color="error"
+                    variant="outlined"
+                    startIcon={<PersonRemoveIcon fontSize="small" />}
+                    disabled={isRemoving}
+                    onClick={() => onRemoveUser?.(user)}
+                  >
+                    {isRemoving ? 'Removing...' : 'Remove'}
+                  </Button>
+                }
+              >
+                <ListItemAvatar sx={{ minWidth: 44 }}>
+                  <Avatar src={user?.avatar} alt="User avatar" sx={{ width: 34, height: 34 }}>
+                    {getUserDisplayName(user).charAt(0).toUpperCase()}
+                  </Avatar>
+                </ListItemAvatar>
+                <ListItemText
+                  primary={getUserDisplayName(user)}
+                  secondary={user?.email || '-'}
+                  primaryTypographyProps={{ fontWeight: 700 }}
+                />
+              </ListItem>
+            )
+          })}
         </List>
       }
     </Box>
   )
 }
 
-function BoardInfoDialog({ open, board, isBoardOwner, currentUserRole, onClose, onOpenEdit }) {
+function BoardInfoDialog({
+  open,
+  board,
+  isBoardOwner,
+  currentUserRole,
+  removingMemberId,
+  onClose,
+  onOpenEdit,
+  onRemoveMember
+}) {
   const owners = Array.isArray(board?.owners) ? board.owners : []
   const members = Array.isArray(board?.members) ? board.members : []
   const primaryOwner = owners[0]
@@ -174,7 +206,14 @@ function BoardInfoDialog({ open, board, isBoardOwner, currentUserRole, onClose, 
             </Box>
             <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', md: 'block' } }} />
             <Box sx={{ flex: 1 }}>
-              <BoardUserList title={`Members (${members.length})`} users={members} emptyText="No members yet." />
+              <BoardUserList
+                title={`Members (${members.length})`}
+                users={members}
+                emptyText="No members yet."
+                canRemove={isBoardOwner}
+                removingUserId={removingMemberId}
+                onRemoveUser={onRemoveMember}
+              />
             </Box>
           </Stack>
 
@@ -344,12 +383,14 @@ function BoardBar({
   filterActiveCount = 0
 }) {
   const dispatch = useDispatch()
+  const confirmRemoveMember = useConfirm()
   const currentUser = useSelector(selectCurrentUser)
-  const isBoardOwner = board?.owners?.some(owner => owner._id === currentUser?._id)
+  const isBoardOwner = board?.owners?.some(owner => getUserId(owner) === getUserId(currentUser))
   const [filterAnchorEl, setFilterAnchorEl] = useState(null)
   const [isBoardInfoOpen, setIsBoardInfoOpen] = useState(false)
   const [isBoardEditOpen, setIsBoardEditOpen] = useState(false)
   const [isSavingBoard, setIsSavingBoard] = useState(false)
+  const [removingMemberId, setRemovingMemberId] = useState(null)
   const isFilterPopoverOpen = Boolean(filterAnchorEl)
   const currentUserRole = isBoardOwner ? 'Board Owner' : 'Board Member'
 
@@ -385,6 +426,34 @@ function BoardBar({
       .finally(() => {
         setIsSavingBoard(false)
       })
+  }
+
+  const handleRemoveBoardMember = (member) => {
+    const memberId = getUserId(member)
+    if (!isBoardOwner || !board?._id || !memberId) return
+
+    confirmRemoveMember({
+      title: 'Remove member?',
+      description: 'Remove this member from board? This member will also be removed from assigned cards in this board.',
+      confirmationText: 'Remove',
+      cancellationText: 'Cancel',
+      confirmationButtonProps: { variant: 'contained', color: 'error' }
+    })
+      .then(() => {
+        setRemovingMemberId(memberId)
+        removeBoardMemberAPI(board._id, memberId)
+          .then(response => {
+            toast.success(response?.removeResult || 'Member removed from board successfully!')
+            dispatch(fetchBoardDetailsAPI(board._id))
+          })
+          .catch(error => {
+            toast.error(error?.response?.data?.message || 'Could not remove member')
+          })
+          .finally(() => {
+            setRemovingMemberId(null)
+          })
+      })
+      .catch(() => {})
   }
 
   return (
@@ -486,8 +555,10 @@ function BoardBar({
         board={board}
         isBoardOwner={isBoardOwner}
         currentUserRole={currentUserRole}
+        removingMemberId={removingMemberId}
         onClose={() => setIsBoardInfoOpen(false)}
         onOpenEdit={handleOpenEditBoard}
+        onRemoveMember={handleRemoveBoardMember}
       />
 
       <EditBoardDialog
