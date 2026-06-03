@@ -4,10 +4,6 @@ import AppsIcon from '@mui/icons-material/Apps'
 import { ReactComponent as TrelloIcon } from '~/assets/trello.svg'
 import SvgIcon from '@mui/material/SvgIcon'
 import Typography from '@mui/material/Typography'
-import Workspaces from './Menus/Workspaces'
-import Recent from './Menus/Recent'
-import Starred from './Menus/Starred'
-import Templates from './Menus/Templates'
 import Profiles from './Menus/Profiles'
 import Button from '@mui/material/Button'
 import Tooltip from '@mui/material/Tooltip'
@@ -19,6 +15,31 @@ import { useSelector } from 'react-redux'
 import { selectCurrentUser } from '~/redux/user/userSlice'
 import Notifications from './Notifications/Notifications'
 import AutoCompleteSearchBoard from './SearchBoards/AutoCompleteSearchBoard'
+
+function ComingSoonButton({ label, startIcon, endIcon }) {
+  return (
+    <Tooltip title="Coming soon">
+      <Box component="span">
+        <Button
+          disabled
+          sx={{
+            color: 'rgba(255,255,255,0.72)',
+            border: 'none',
+            whiteSpace: 'nowrap',
+            '&.Mui-disabled': {
+              color: 'rgba(255,255,255,0.72)'
+            }
+          }}
+          variant="outlined"
+          startIcon={startIcon}
+          endIcon={endIcon}
+        >
+          {label}
+        </Button>
+      </Box>
+    </Tooltip>
+  )
+}
 
 function AppBar() {
   const currentUser = useSelector(selectCurrentUser)
@@ -51,17 +72,17 @@ function AppBar() {
         <Link to={homePath} style={{ textDecoration: 'none' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <SvgIcon component={TrelloIcon} fontSize="small" inheritViewBox sx={{ color: 'white' }} />
-            <Typography variant="span" sx={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white' }}>TaskFlowDdow</Typography>
+            <Typography variant="span" sx={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white' }}>TaskFlow</Typography>
           </Box>
         </Link>
 
         <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
           {!isSystemAdmin &&
             <>
-              <Workspaces />
-              <Recent />
-              <Starred />
-              <Templates />
+              <ComingSoonButton label="Workspaces" />
+              <ComingSoonButton label="Recent" />
+              <ComingSoonButton label="Starred" />
+              <ComingSoonButton label="Templates" />
             </>
           }
           {isSystemAdmin &&
@@ -81,17 +102,7 @@ function AppBar() {
             </Button>
           }
           {!isSystemAdmin &&
-            <Button
-              sx={{
-                color: 'white',
-                border: 'none',
-                '&:hover': { border: 'none' }
-              }}
-              variant="outlined"
-              startIcon={<LibraryAddIcon />}
-            >
-              Create
-            </Button>
+            <ComingSoonButton label="Create" startIcon={<LibraryAddIcon />} />
           }
         </Box>
 

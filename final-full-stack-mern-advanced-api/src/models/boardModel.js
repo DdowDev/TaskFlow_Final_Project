@@ -41,8 +41,7 @@ const BOARD_COLLECTION_SCHEMA = Joi.object({
   _destroy: Joi.boolean().default(false)
 })
 
-// Chỉ định ra những Fields mà chúng ta không muốn cho phép cập nhật trong hàm update()
-const INVALID_UPDATE_FIELDS = ['_id', 'createdAt']
+const ALLOWED_UPDATE_FIELDS = ['title', 'description', 'type', 'columnOrderIds', 'updatedAt']
 
 const validateBeforeCreate = async (data) => {
   return await BOARD_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
@@ -144,21 +143,20 @@ const pullColumnOrderIds = async (column) => {
 
 const update = async (boardId, updateData) => {
   try {
-    // Lọc những field mà chúng ta không cho phép cập nhật linh tinh
+    const sanitizedUpdateData = {}
     Object.keys(updateData).forEach(fieldName => {
-      if (INVALID_UPDATE_FIELDS.includes(fieldName)) {
-        delete updateData[fieldName]
+      if (ALLOWED_UPDATE_FIELDS.includes(fieldName)) {
+        sanitizedUpdateData[fieldName] = updateData[fieldName]
       }
     })
 
-    // Đối với những dữ liệu liên quan ObjectId, biến đổi ở đây
-    if (updateData.columnOrderIds) {
-      updateData.columnOrderIds = updateData.columnOrderIds.map(_id => (new ObjectId(_id)))
+    if (sanitizedUpdateData.columnOrderIds) {
+      sanitizedUpdateData.columnOrderIds = sanitizedUpdateData.columnOrderIds.map(_id => (new ObjectId(_id)))
     }
 
     const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
       { _id: new ObjectId(boardId) },
-      { $set: updateData },
+      { $set: sanitizedUpdateData },
       { returnDocument: 'after' } // sẽ trả về kết quả mới sau khi cập nhật
     )
     return result
