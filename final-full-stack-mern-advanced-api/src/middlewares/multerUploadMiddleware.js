@@ -9,7 +9,6 @@ import { StatusCodes } from 'http-status-codes'
 
 // Function Kiểm tra loại file nào được chấp nhận
 const customFileFilter = (req, file, callback) => {
-  // console.log('Multer File: ', file)
 
   // Đối với thằng multer, kiểm tra kiểu file thì sử dụng mimetype
   if (!ALLOW_COMMON_FILE_TYPES.includes(file.mimetype)) {

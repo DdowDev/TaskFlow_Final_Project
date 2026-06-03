@@ -1,9 +1,3 @@
-/**
- * Updated by trungquandev.com's author on August 17 2023
- * YouTube: https://youtube.com/@trungquandev
- * "A bit of fragrance clings to the hand that gives flowers!"
- */
-
 import Joi from 'joi'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '~/config/mongodb'
@@ -27,8 +21,7 @@ const BOARD_COLLECTION_SCHEMA = Joi.object({
   */
   // type: Joi.string().valid(BOARD_TYPES.PUBLIC, BOARD_TYPES.PRIVATE).required(),
   type: Joi.string().required().valid(...Object.values(BOARD_TYPES)),
-
-  // Lưu ý các item trong mảng columnOrderIds là ObjectId nên cần thêm pattern cho chuẩn nhé, (lúc quay video số 57 mình quên nhưng sang đầu video số 58 sẽ có nhắc lại về cái này.)
+  // Order ids are stored as MongoDB ObjectId strings.
   columnOrderIds: Joi.array().items(
     Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
   ).default([]),
@@ -77,8 +70,6 @@ const findOneById = async (boardId) => {
 // Query tổng hợp (aggregate) để lấy toàn bộ Columns và Cards thuộc về Board
 const getDetails = async (userId, boardId) => {
   try {
-    // Hôm nay tạm thời giống hệt hàm findOneById - và sẽ update phần aggregate tiếp ở những video tới
-    // const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOne({ _id: new ObjectId(id) })
 
     const queryConditions = [
       { _id: new ObjectId(boardId) },
@@ -198,7 +189,6 @@ const getBoards = async (userId, page, itemsPerPage, queryFilters) => {
         queryConditions.push({ [key]: { $regex: new RegExp(queryFilters[key], 'i') } })
       })
     }
-    // console.log('queryConditions: ', queryConditions)
 
     const query = await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate(
       [
@@ -221,10 +211,7 @@ const getBoards = async (userId, page, itemsPerPage, queryFilters) => {
       // https://www.mongodb.com/docs/v6.0/reference/collation/#std-label-collation-document-fields
       { collation: { locale: 'en' } }
     ).toArray()
-
-    // console.log('query: ', query)
     const res = query[0]
-    // console.log('res.queryTotalBoards[0]: ', res.queryTotalBoards[0])
     return {
       boards: res.queryBoards || [],
       totalBoards: res.queryTotalBoards[0]?.countedAllBoards || 0

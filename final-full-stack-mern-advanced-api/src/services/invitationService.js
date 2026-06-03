@@ -1,7 +1,3 @@
-/**
-* YouTube: https://youtube.com/@trungquandev
-* "A bit of fragrance clings to the hand that gives flowers!"
-*/
 import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
 import { userModel } from '~/models/userModel'
@@ -61,17 +57,8 @@ const createNewBoardInvitation = async (reqBody, inviterId) => {
 const getInvitations = async (userId) => {
   try {
     const getInvitations = await invitationModel.findByUser(userId)
-    // console.log('getInvitations: ', getInvitations)
 
     // Vì các dữ liệu inviter, invitee và board là đang ở giá trị mảng 1 phần tử nếu lấy ra được nên chúng ta biến đổi nó về Json Object trước khi trả về cho phía FE
-    // const resInvitations = getInvitations.map(i => {
-    //   return {
-    //     ...i,
-    //     inviter: i.inviter[0] || {},
-    //     invitee: i.invitee[0] || {},
-    //     board: i.board[0] || {}
-    //   }
-    // })
     const resInvitations = getInvitations.map(i => ({
       ...i,
       inviter: i.inviter[0] || {},

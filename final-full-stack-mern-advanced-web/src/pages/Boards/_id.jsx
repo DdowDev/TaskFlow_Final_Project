@@ -98,7 +98,6 @@ const countCardsInBoard = (targetBoard) => {
 function Board() {
   const dispatch = useDispatch()
   // Không dùng State của component nữa mà chuyển qua dùng State của Redux
-  // const [board, setBoard] = useState(null)
   const board = useSelector(selectCurrentActiveBoard)
   const currentUser = useSelector(selectCurrentUser)
   const [activeBoardView, setActiveBoardView] = useState('kanban')
@@ -170,7 +169,6 @@ function Board() {
     const newBoard = { ...board }
     newBoard.columns = dndOrderedColumns
     newBoard.columnOrderIds = dndOrderedColumnsIds
-    // setBoard(newBoard)
     dispatch(updateCurrentActiveBoard(newBoard))
 
     // Gọi API update Board
@@ -188,14 +186,12 @@ function Board() {
     * Cannot assign to read only property 'cards' of object
     * Trường hợp Immutability ở đây đã đụng tới giá trị cards đang được coi là chỉ đọc read only - (nested object - can thiệp sâu dữ liệu)
     */
-    // const newBoard = { ...board }
     const newBoard = cloneDeep(board)
     const columnToUpdate = newBoard.columns.find(column => column._id === columnId)
     if (columnToUpdate) {
       columnToUpdate.cards = dndOrderedCards
       columnToUpdate.cardOrderIds = dndOrderedCardIds
     }
-    // setBoard(newBoard)
     dispatch(updateCurrentActiveBoard(newBoard))
 
     // Gọi API update Column
@@ -217,12 +213,11 @@ function Board() {
     const newBoard = { ...board }
     newBoard.columns = dndOrderedColumns
     newBoard.columnOrderIds = dndOrderedColumnsIds
-    // setBoard(newBoard)
     dispatch(updateCurrentActiveBoard(newBoard))
 
     // Gọi API xử lý phía BE
     let prevCardOrderIds = dndOrderedColumns.find(c => c._id === prevColumnId)?.cardOrderIds
-    // Xử lý vấn đề khi kéo Card cuối cùng ra khỏi Column, Column rỗng sẽ có placeholder card, cần xóa nó đi trước khi gửi dữ liệu lên cho phía BE. (Nhớ lại video 37.2)
+    // Xử lý vấn đề khi kéo Card cuối cùng ra khỏi Column, Column rỗng sẽ có placeholder card, cần xóa nó đi trước khi gửi dữ liệu lên cho phía BE.
     if (prevCardOrderIds[0].includes('placeholder-card')) prevCardOrderIds = []
 
     moveCardToDifferentColumnAPI({

@@ -21,7 +21,6 @@ import AdminBoards from '~/pages/Admin/AdminBoards'
  * https://www.robinwieruch.de/react-router-private-routes/
  */
 const ProtectedRoute = ({ user }) => {
-  // console.log(user)
   if (!user) return <Navigate to='/login' replace={true} />
   return <Outlet />
 }
@@ -34,6 +33,7 @@ const AdminRoute = ({ user }) => {
 
 function App() {
   const currentUser = useSelector(selectCurrentUser)
+  const defaultAuthenticatedPath = currentUser?.role === 'system_admin' ? '/admin/dashboard' : '/boards'
 
   return (
     <Routes>
@@ -41,7 +41,7 @@ function App() {
       <Route path='/' element={
         // Ở đây cần replace giá trị true để nó thay thế route /, có thể hiểu là route / sẽ không còn nằm trong history của Browser
         // Thực hành dễ hiểu hơn bằng cách nhấn Go Home từ trang 404 xong thử quay lại bằng nút back của trình duyệt giữa 2 trường hợp có replace hoặc không có.
-        <Navigate to="/boards" replace={true} />
+        <Navigate to={defaultAuthenticatedPath} replace={true} />
       } />
 
       {/* Protected Routes (Hiểu đơn giản trong dự án của chúng ta là những route chỉ cho truy cập sau khi đã login) */}

@@ -30,16 +30,13 @@ function CardUserGroup({ cardMemberIds = [], onUpdateCardMembers }) {
    * Vì thế dựa vào mảng board.FE_allUsers và card.memberIds rồi chúng ta tạo ra một mảng FE_CardMembers chứa đủ thông tin của User để hiển thị ra ngoài giao diện, bởi mặc định trong card chỉ lưu đám Id của User thôi (memberIds)
    */
   const FE_CardMembers = cardMemberIds.map(id => board.FE_allUsers.find(u => u._id === id))
-  // console.log('FE_CardMembers: ', FE_CardMembers)
 
   const handleUpdateCardMembers = (user) => {
-    // console.log(user)
     // Tạo một biến incomingMemberInfo để gửi cho BE, với 2 thông tin chính là userId và action là xóa khỏi card (REMOVE) hoặc thêm vào card (ADD)
     const incomingMemberInfo = {
       userId: user?._id,
       action: cardMemberIds.includes(user?._id) ? CARD_MEMBER_ACTIONS.REMOVE : CARD_MEMBER_ACTIONS.ADD
     }
-    // console.log('incomingMemberInfo: ', incomingMemberInfo)
     onUpdateCardMembers(incomingMemberInfo)
   }
 

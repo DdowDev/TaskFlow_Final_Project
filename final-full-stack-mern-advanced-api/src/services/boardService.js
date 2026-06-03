@@ -1,9 +1,3 @@
-/**
- * Updated by trungquandev.com's author on August 17 2023
- * YouTube: https://youtube.com/@trungquandev
- * "A bit of fragrance clings to the hand that gives flowers!"
- */
-
 import { slugify } from '~/utils/formatters'
 import { boardModel } from '~/models/boardModel'
 import { columnModel } from '~/models/columnModel'
@@ -65,7 +59,7 @@ const getDetails = async (userId, boardId) => {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found!')
     }
 
-    // B1: Deep Clone board ra một cái mới để xử lý, không ảnh hưởng tới board ban đầu, tùy mục đích về sau mà có cần clone deep hay không. (video 63 sẽ giải thích)
+    // B1: Deep Clone board ra một cái mới để xử lý, không ảnh hưởng tới board ban đầu, tùy mục đích về sau mà có cần clone deep hay không.
     // https://www.javascripttutorial.net/javascript-primitive-vs-reference-values/
     const resBoard = cloneDeep(board)
 
@@ -73,9 +67,6 @@ const getDetails = async (userId, boardId) => {
     resBoard.columns.forEach(column => {
       // Cách dùng .equals này là bởi vì chúng ta hiểu ObjectId trong MongoDB có support method .equals
       column.cards = resBoard.cards.filter(card => card.columnId.equals(column._id))
-
-      // // Cách khác đơn giản là convert ObjectId về string bằng hàm toString() của JavaScript
-      // column.cards = resBoard.cards.filter(card => card.columnId.toString() === column._id.toString())
     })
 
     // B3: Xóa mảng cards khỏi board ban đầu

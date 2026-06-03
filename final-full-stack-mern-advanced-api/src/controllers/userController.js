@@ -1,7 +1,3 @@
-/**
-* TrungQuanDev: https://youtube.com/@trungquandev
-* "A bit of fragrance clings to the hand that gives flowers!"
-*/
 import { StatusCodes } from 'http-status-codes'
 import { userService } from '~/services/userService'
 import ms from 'ms'
@@ -79,7 +75,6 @@ const update = async (req, res, next) => {
   try {
     const userId = req.jwtDecoded._id
     const userAvatarFile = req.file
-    // console.log('Controller > userAvatarFile: ', userAvatarFile)
     const updatedUser = await userService.update(userId, req.body, userAvatarFile)
     res.status(StatusCodes.OK).json(updatedUser)
   } catch (error) { next(error) }

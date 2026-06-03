@@ -1,7 +1,3 @@
-/**
-* YouTube: https://youtube.com/@trungquandev
-* "A bit of fragrance clings to the hand that gives flowers!"
-*/
 import Joi from 'joi'
 import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'

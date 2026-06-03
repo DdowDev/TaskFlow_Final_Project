@@ -28,8 +28,6 @@ function InviteBoardUser({ boardId }) {
   const { register, handleSubmit, setValue, formState: { errors } } = useForm()
   const submitInviteUserToBoard = (data) => {
     const { inviteeEmail } = data
-
-    // console.log('inviteeEmail:', inviteeEmail)
     // Gọi API mời một người dùng nào đó vào làm thành viên của Board
     inviteUserToBoardAPI({ inviteeEmail, boardId }).then(invitation => {
       // Clear thẻ input sử dụng react-hook-form bằng setValue, đồng thời đóng popover lại

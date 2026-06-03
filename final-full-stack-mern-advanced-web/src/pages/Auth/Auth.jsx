@@ -1,4 +1,3 @@
-// TrungQuanDev: https://youtube.com/@trungquandev
 import { useLocation, Navigate } from 'react-router-dom'
 import Box from '@mui/material/Box'
 import LoginForm from './LoginForm'
@@ -8,7 +7,6 @@ import { selectCurrentUser } from '~/redux/user/userSlice'
 
 function Auth() {
   const location = useLocation()
-  // console.log(location)
   const isLogin = location.pathname === '/login'
   const isRegister = location.pathname === '/register'
 

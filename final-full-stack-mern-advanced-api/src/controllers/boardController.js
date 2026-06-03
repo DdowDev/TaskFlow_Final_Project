@@ -1,19 +1,8 @@
-/**
- * Updated by trungquandev.com's author on August 17 2023
- * YouTube: https://youtube.com/@trungquandev
- * "A bit of fragrance clings to the hand that gives flowers!"
- */
 import { StatusCodes } from 'http-status-codes'
 import { boardService } from '~/services/boardService'
 
 const createNew = async (req, res, next) => {
   try {
-    // console.log('req.body: ', req.body)
-    // console.log('req.query: ', req.query)
-    // console.log('req.params: ', req.params)
-    // console.log('req.files: ', req.files)
-    // console.log('req.cookies: ', req.cookies)
-    // console.log('req.jwtDecoded: ', req.jwtDecoded)
 
     const userId = req.jwtDecoded._id
 
@@ -29,7 +18,6 @@ const getDetails = async (req, res, next) => {
   try {
     const userId = req.jwtDecoded._id
     const boardId = req.params.id
-    // Sau này ở khóa MERN Stack Advance nâng cao học trực tiếp sẽ có thêm userId nữa để chỉ lấy board thuộc về user đó thôi chẳng hạn...vv
     const board = await boardService.getDetails(userId, boardId)
     res.status(StatusCodes.OK).json(board)
   } catch (error) { next(error) }
@@ -68,7 +56,6 @@ const getBoards = async (req, res, next) => {
     // page và itemsPerPage được truyền vào trong query url từ phía FE nên BE sẽ lấy thông qua req.query
     const { page, itemsPerPage, q } = req.query
     const queryFilters = q
-    // console.log(queryFilters)
 
     const results = await boardService.getBoards(userId, page, itemsPerPage, queryFilters)
 

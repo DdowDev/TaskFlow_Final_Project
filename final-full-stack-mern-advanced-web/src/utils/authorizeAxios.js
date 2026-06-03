@@ -66,11 +66,9 @@ authorizedAxiosInstance.interceptors.response.use((response) => {
   // Trường hợp 2: Nếu như nhận mã 410 từ BE, thì sẽ gọi api refresh token để làm mới lại accessToken
   // Trường hợp 2 > Bước 1: Đầu tiên lấy được các request API đang bị lỗi thông qua error.config
   const originalRequests = error.config
-  // console.log('originalRequests: ', originalRequests)
 
   // if (error.response?.status === 410 && !originalRequests._retry) {
   if (error.response?.status === 410 && originalRequests) {
-    // UPDATE THÊM: Có thể bỏ không cần thêm cái _retry giống như nhiều bài hướng dẫn khác trên mạng nữa vì chúng ta đang làm chuẩn với biến refreshTokenPromise ở trên rồi, nếu muốn hiểu rõ hơn thì có thể xem riêng phần này ở bộ JWT trên kênh của mình nhé, Link: https://www.youtube.com/playlist?list=PLP6tw4Zpj-RJwtNw9564QKFf93hWiDnR_
     // Gán thêm một giá trị _retry luôn = true trong khoảng thời gian chờ, đảm bảo việc refresh token này chỉ luôn gọi 1 lần tại 1 thời điểm (nhìn lại điều kiện if ngay phía trên)
     // originalRequests._retry = true
 
@@ -111,7 +109,6 @@ authorizedAxiosInstance.interceptors.response.use((response) => {
   }
 
   // Xử lý tập trung phần hiển thị thông báo lỗi trả về từ mọi API ở đây (viết code một lần: Clean Code)
-  // console.log error ra là sẽ thấy cấu trúc data đẫn tới message lỗi như dưới đây
   let errorMessage = error?.message
   if (error.response?.data?.message) {
     errorMessage = error.response?.data?.message

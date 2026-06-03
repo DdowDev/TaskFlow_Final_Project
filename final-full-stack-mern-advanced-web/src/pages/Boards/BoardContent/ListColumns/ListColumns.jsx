@@ -43,7 +43,7 @@ function ListColumns({ columns, canManageColumns = false, isDragDisabled = false
       boardId: board._id
     })
 
-    // Khi tạo column mới thì nó sẽ chưa có card, cần xử lý vấn đề kéo thả vào một column rỗng (Nhớ lại video 37.2, code hiện tại là video 69)
+    // Khi tạo column mới thì nó sẽ chưa có card, cần xử lý vấn đề kéo thả vào một column rỗng
     createdColumn.cards = [generatePlaceholderCard(createdColumn)]
     createdColumn.cardOrderIds = [generatePlaceholderCard(createdColumn)._id]
 
@@ -57,17 +57,9 @@ function ListColumns({ columns, canManageColumns = false, isDragDisabled = false
     * Tài liệu thêm về Shallow và Deep Copy Object trong JS:
     * https://www.javascripttutorial.net/object/3-ways-to-copy-objects-in-javascript/
     */
-    // const newBoard = { ...board }
     const newBoard = cloneDeep(board)
     newBoard.columns.push(createdColumn)
     newBoard.columnOrderIds.push(createdColumn._id)
-
-    /**
-    * Ngoài ra cách nữa là vẫn có thể dùng array.concat thay cho push như docs của Redux Toolkit ở trên vì push như đã nói nó sẽ thay đổi giá trị mảng trực tiếp, còn thằng concat thì nó merge - ghép mảng lại và tạo ra một mảng mới để chúng ta gán lại giá trị nên không vấn đề gì.
-    */
-    // const newBoard = { ...board }
-    // newBoard.columns = newBoard.columns.concat([createdColumn])
-    // newBoard.columnOrderIds = newBoard.columnOrderIds.concat([createdColumn._id])
 
     // Cập nhật dữ liệu Board vào trong Redux Store
     dispatch(updateCurrentActiveBoard(newBoard))
