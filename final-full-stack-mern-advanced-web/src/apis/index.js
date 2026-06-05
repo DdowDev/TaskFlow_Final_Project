@@ -23,6 +23,11 @@ export const analyzeBoardWithAIAPI = async (boardId) => {
   return response.data
 }
 
+export const suggestCardChecklistWithAIAPI = async (cardId) => {
+  const response = await authorizedAxiosInstance.post(`${API_ROOT}/v1/ai/cards/${cardId}/checklist-suggestions`)
+  return response.data
+}
+
 export const removeBoardMemberAPI = async (boardId, memberId) => {
   const response = await authorizedAxiosInstance.delete(`${API_ROOT}/v1/boards/${boardId}/members/${memberId}`)
   return response.data
