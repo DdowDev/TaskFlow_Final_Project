@@ -304,7 +304,7 @@ function DetailTabs({ activeTab, onChangeTab, tabs }) {
   )
 }
 
-function LoadingHero() {
+function LoadingHero({ loadingMessage }) {
   return (
     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
       <Skeleton variant="circular" width={76} height={76} />
@@ -312,6 +312,9 @@ function LoadingHero() {
         <Skeleton variant="text" width="44%" />
         <Skeleton variant="text" width="76%" />
         <Skeleton variant="rounded" height={42} />
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 700 }}>
+          {loadingMessage || 'Đang phân tích board...'}
+        </Typography>
       </Stack>
     </Stack>
   )
@@ -371,7 +374,7 @@ function ActionBar({ loading, onAnalyze, onDrillDown }) {
         disabled={loading}
         onClick={onAnalyze}
       >
-        {loading ? 'Đang phân tích...' : 'Phân tích lại'}
+        {loading ? 'Đang phân tích lại...' : 'Phân tích lại'}
       </Button>
     </Stack>
   )
@@ -380,6 +383,7 @@ function ActionBar({ loading, onAnalyze, onDrillDown }) {
 function AiAssistantPanel({
   analysis,
   loading,
+  loadingMessage,
   error,
   expanded,
   activeTab,
@@ -529,7 +533,7 @@ function AiAssistantPanel({
                   disabled={loading}
                   onClick={onAnalyze}
                 >
-                  {loading ? 'Đang phân tích...' : 'Phân tích lại'}
+                  {loading ? 'Đang phân tích lại...' : 'Phân tích lại'}
                 </Button>
               }
 
@@ -550,12 +554,23 @@ function AiAssistantPanel({
             <Alert severity="error">{error}</Alert>
           }
 
-          {loading && !hasAnalysis && <LoadingHero />}
+          {loading && !hasAnalysis && <LoadingHero loadingMessage={loadingMessage} />}
 
           {!loading && !hasAnalysis && <EmptyHero loading={loading} onAnalyze={onAnalyze} />}
 
           {hasAnalysis &&
             <Stack spacing={1.5}>
+              {loading &&
+                <Alert severity="info" icon={<CircularProgress size={18} />}>
+                  <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                    Đang phân tích lại...
+                  </Typography>
+                  <Typography variant="body2">
+                    {loadingMessage || 'Đang tổng hợp kết quả mới...'}
+                  </Typography>
+                </Alert>
+              }
+
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'flex-start' }}>
                 <HealthScore summary={summary} />
 

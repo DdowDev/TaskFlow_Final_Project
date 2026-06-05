@@ -13,6 +13,13 @@ import WorkSection from './components/WorkSection'
 
 const getNumber = (value) => Number.isFinite(Number(value)) ? Number(value) : 0
 
+const AI_LOADING_STEPS = [
+  'Đang đọc dữ liệu board...',
+  'Đang phân tích rủi ro...',
+  'Đang xếp ưu tiên card...',
+  'Đang tổng hợp kết quả...'
+]
+
 function DashboardSkeleton() {
   return (
     <Grid container spacing={2}>
@@ -39,6 +46,7 @@ function BoardDashboard({ boardId, isActive, onDrillDown = () => {} }) {
   const [aiError, setAiError] = useState(null)
   const [aiExpanded, setAiExpanded] = useState(false)
   const [activeAiTab, setActiveAiTab] = useState('risks')
+  const [aiLoadingStepIndex, setAiLoadingStepIndex] = useState(0)
 
   const fetchDashboard = useMemo(() => async () => {
     if (!boardId) return
@@ -69,13 +77,29 @@ function BoardDashboard({ boardId, isActive, onDrillDown = () => {} }) {
     setIsAiLoading(false)
     setAiExpanded(false)
     setActiveAiTab('risks')
+    setAiLoadingStepIndex(0)
   }, [boardId])
+
+  useEffect(() => {
+    if (!isAiLoading) {
+      setAiLoadingStepIndex(0)
+      return
+    }
+
+    setAiLoadingStepIndex(0)
+    const intervalId = setInterval(() => {
+      setAiLoadingStepIndex(prev => (prev + 1) % AI_LOADING_STEPS.length)
+    }, 2800)
+
+    return () => clearInterval(intervalId)
+  }, [isAiLoading])
 
   const handleAnalyzeBoardWithAI = async () => {
     if (!boardId || isAiLoading) return
 
     setIsAiLoading(true)
     setAiError(null)
+    setAiLoadingStepIndex(0)
 
     try {
       const result = await analyzeBoardWithAIAPI(boardId)
@@ -90,6 +114,7 @@ function BoardDashboard({ boardId, isActive, onDrillDown = () => {} }) {
   }
 
   const totalCards = getNumber(dashboard?.totalCards)
+  const aiLoadingMessage = isAiLoading ? AI_LOADING_STEPS[aiLoadingStepIndex] : ''
 
   return (
     <Box sx={{
@@ -128,6 +153,7 @@ function BoardDashboard({ boardId, isActive, onDrillDown = () => {} }) {
                 <AiAssistantPanel
                   analysis={aiAnalysis}
                   loading={isAiLoading}
+                  loadingMessage={aiLoadingMessage}
                   error={aiError}
                   expanded={aiExpanded}
                   activeTab={activeAiTab}

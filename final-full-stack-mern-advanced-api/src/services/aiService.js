@@ -4,10 +4,26 @@ import { boardModel } from '~/models/boardModel'
 import { cardModel } from '~/models/cardModel'
 import { boardPermissions } from '~/utils/boardPermissions'
 import { aiProvider } from '~/providers/aiProvider'
+import { env } from '~/config/environment'
 import {
   buildBoardAnalysisByRules,
   buildChecklistSuggestionsByRules
 } from '~/utils/aiFallbackRules'
+
+const isDevMode = () => env.BUILD_MODE === 'dev' || process.env.NODE_ENV === 'development'
+
+const getAiErrorInfo = (error) => ({
+  name: error?.name || 'Error',
+  message: error?.message || 'Unknown AI provider error.',
+  status: error?.status || error?.code || null
+})
+
+const logAiFallback = (scope, data) => {
+  if (!isDevMode()) return
+
+  // eslint-disable-next-line no-console
+  console.log(`[AI][${scope}] fallback`, data)
+}
 
 const verifyBoardOwnerOrMember = (userId, board) => {
   if (!boardPermissions.isBoardOwnerOrMember(userId, board)) {
@@ -53,7 +69,12 @@ const analyzeBoard = async (userId, boardId) => {
       const providerResult = await aiProvider.generateBoardAnalysis({ board, dashboard, cards })
       if (providerResult) return providerResult
     } catch (error) {
-      // Real AI is optional in this phase; fallback keeps the API demo-safe.
+      logAiFallback('BoardAnalysis', {
+        boardId,
+        cards: cards.length,
+        mode,
+        ...getAiErrorInfo(error)
+      })
     }
 
     return buildBoardAnalysisByRules({ board, dashboard, cards, mode: 'fallback' })
@@ -74,7 +95,11 @@ const suggestChecklist = async (userId, cardId) => {
       const providerResult = await aiProvider.generateChecklistSuggestions({ card, board })
       if (providerResult) return providerResult
     } catch (error) {
-      // Real AI is optional in this phase; fallback keeps the API demo-safe.
+      logAiFallback('ChecklistSuggestions', {
+        cardId,
+        mode,
+        ...getAiErrorInfo(error)
+      })
     }
 
     return buildChecklistSuggestionsByRules({ card, mode: 'fallback' })
