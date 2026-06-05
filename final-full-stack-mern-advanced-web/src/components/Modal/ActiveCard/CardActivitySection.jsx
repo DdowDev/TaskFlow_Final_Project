@@ -149,13 +149,13 @@ const getActivityVisual = (theme, action) => {
   if (action === ACTIVITY_ACTIONS.COVER_UPDATED) {
     return {
       color: theme.palette.text.secondary,
-      backgroundColor: alpha(theme.palette.action.hover, 1)
+      backgroundColor: theme.palette.action.hover
     }
   }
 
   return {
     color: theme.palette.text.secondary,
-    backgroundColor: alpha(theme.palette.action.hover, 1)
+    backgroundColor: theme.palette.action.hover
   }
 }
 
@@ -190,6 +190,29 @@ function CardActivitySection({ cardId, cardComments = [], onAddCardComment }) {
     setHasFetchedActivities(false)
     setIsLoadingActivities(false)
     setActivityError(null)
+  }, [cardId])
+
+  useEffect(() => {
+    if (!cardId) return
+
+    let isCancelled = false
+
+    const fetchActivityCount = async () => {
+      try {
+        const result = await fetchCardActivitiesAPI(cardId, '?page=1&itemsPerPage=1&excludeCommentCreated=true')
+        if (!isCancelled) {
+          setTotalActivities(typeof result?.totalActivities === 'number' ? result.totalActivities : 0)
+        }
+      } catch (error) {
+        if (!isCancelled) setTotalActivities(null)
+      }
+    }
+
+    fetchActivityCount()
+
+    return () => {
+      isCancelled = true
+    }
   }, [cardId])
 
   useEffect(() => {
@@ -305,7 +328,8 @@ function CardActivitySection({ cardId, cardComments = [], onAddCardComment }) {
 
                 <Box sx={{
                   display: 'block',
-                  bgcolor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.08) : theme.palette.common.white,
+                  color: 'text.primary',
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.08) : theme.palette.background.paper,
                   p: '8px 12px',
                   mt: '4px',
                   border: 1,
@@ -369,6 +393,7 @@ function CardActivitySection({ cardId, cardComments = [], onAddCardComment }) {
                     p: 1,
                     borderRadius: '6px',
                     bgcolor: visual.backgroundColor,
+                    color: 'text.primary',
                     border: 1,
                     borderColor: 'divider',
                     '& .activity-icon': { color: visual.color }
