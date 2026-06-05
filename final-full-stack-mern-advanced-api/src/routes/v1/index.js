@@ -6,6 +6,7 @@ import { cardRoute } from '~/routes/v1/cardRoute'
 import { userRoute } from '~/routes/v1/userRoute'
 import { invitationRoute } from '~/routes/v1/invitationRoute'
 import { adminRoute } from '~/routes/v1/adminRoute'
+import { aiRoute } from '~/routes/v1/aiRoute'
 
 const Router = express.Router()
 
@@ -31,5 +32,8 @@ Router.use('/invitations', invitationRoute)
 
 /** Admin APIs */
 Router.use('/admin', adminRoute)
+
+/** AI Assistant APIs */
+Router.use('/ai', aiRoute)
 
 export const APIs_V1 = Router

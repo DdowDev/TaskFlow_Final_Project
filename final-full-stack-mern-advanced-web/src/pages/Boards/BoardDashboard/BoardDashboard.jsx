@@ -1,8 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
+import Card from '@mui/material/Card'
+import CardContent from '@mui/material/CardContent'
+import Collapse from '@mui/material/Collapse'
+import CircularProgress from '@mui/material/CircularProgress'
 import Grid from '@mui/material/Grid'
 import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
+import Tab from '@mui/material/Tab'
+import Tabs from '@mui/material/Tabs'
 import Typography from '@mui/material/Typography'
 import Chip from '@mui/material/Chip'
 import Skeleton from '@mui/material/Skeleton'
@@ -15,6 +22,11 @@ import EventAvailableIcon from '@mui/icons-material/EventAvailable'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import FactCheckIcon from '@mui/icons-material/FactCheck'
 import GroupIcon from '@mui/icons-material/Group'
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import PsychologyIcon from '@mui/icons-material/Psychology'
+import RefreshIcon from '@mui/icons-material/Refresh'
 import { alpha, useTheme } from '@mui/material/styles'
 import {
   Bar,
@@ -29,7 +41,7 @@ import {
   XAxis,
   YAxis
 } from 'recharts'
-import { fetchBoardDashboardAPI } from '~/apis'
+import { analyzeBoardWithAIAPI, fetchBoardDashboardAPI } from '~/apis'
 import { CARD_PRIORITIES, CARD_STATUSES } from '~/utils/constants'
 
 const statusLabels = {
@@ -78,6 +90,43 @@ const getAssigneeLabel = (assignees) => {
   if (!names.length) return 'Unassigned'
   if (names.length <= 2) return names.join(', ')
   return `${names.slice(0, 2).join(', ')} +${names.length - 2}`
+}
+
+const getSafeArray = (value) => Array.isArray(value) ? value : []
+
+const formatGeneratedAt = (value) => {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const getHealthColor = (score) => {
+  const safeScore = getNumber(score)
+  if (safeScore <= 40) return 'error'
+  if (safeScore <= 70) return 'warning'
+  return 'success'
+}
+
+const getModeLabel = (mode) => {
+  if (mode === 'mock') return 'Mock mode'
+  if (mode === 'fallback') return 'Fallback analysis'
+  if (mode === 'real') return 'AI analysis'
+  return 'AI analysis'
+}
+
+const getRiskColor = (level) => {
+  if (level === 'high') return 'error'
+  if (level === 'medium') return 'warning'
+  if (level === 'low') return 'info'
+  return 'default'
 }
 
 function StatCard({ icon, label, value, helper, onClick }) {
@@ -251,6 +300,361 @@ function WorkloadCard({ workload }) {
   )
 }
 
+function AiListBlock({ title, items, emptyText, renderItem }) {
+  const visibleItems = items.slice(0, 3)
+  const hiddenCount = Math.max(items.length - visibleItems.length, 0)
+
+  if (!items.length) {
+    return <Typography variant="body2" color="text.secondary">{emptyText}</Typography>
+  }
+
+  return (
+    <Stack spacing={1}>
+      {visibleItems.map((item, index) => (
+        <Box
+          key={`${title}-${index}`}
+          sx={{
+            py: 1,
+            borderBottom: index === visibleItems.length - 1 ? 'none' : '1px solid',
+            borderColor: 'divider'
+          }}
+        >
+          {renderItem(item)}
+        </Box>
+      ))}
+      {hiddenCount > 0 &&
+        <Typography variant="caption" color="text.secondary">
+          Còn {hiddenCount} mục khác...
+        </Typography>
+      }
+    </Stack>
+  )
+}
+
+function AiMetricCard({ label, value, chipLabel, chipColor = 'default', children }) {
+  return (
+    <Card variant="outlined" sx={{ height: '100%', borderRadius: 2 }}>
+      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+        <Stack spacing={1}>
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>{label}</Typography>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
+            <Typography variant="h6" sx={{ fontWeight: 900 }}>{value}</Typography>
+            {chipLabel && <Chip size="small" label={chipLabel} color={chipColor} />}
+          </Stack>
+          {children}
+        </Stack>
+      </CardContent>
+    </Card>
+  )
+}
+
+function AiSummaryBlock({ summary, risksCount, priorityCount, actionsCount }) {
+  const hasHealthScore = Number.isFinite(Number(summary?.healthScore))
+  const healthScore = Math.max(Math.min(getNumber(summary?.healthScore), 100), 0)
+  const healthColor = getHealthColor(healthScore)
+
+  return (
+    <Card variant="outlined" sx={{ borderRadius: 2 }}>
+      <CardContent>
+        <Stack spacing={1.5}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>Tổng quan</Typography>
+            {summary?.healthStatus &&
+              <Chip size="small" label={summary.healthStatus} color={healthColor} />
+            }
+          </Stack>
+
+          <Box>
+            <Typography variant="body1" sx={{ fontWeight: 800 }}>
+              {summary?.title || 'Board analysis'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {summary?.description || 'No summary available.'}
+            </Typography>
+          </Box>
+
+          <Grid container spacing={1.25}>
+            <Grid item xs={12} sm={6} md={3}>
+              <AiMetricCard
+                label="Sức khỏe board"
+                value={hasHealthScore ? `${healthScore}/100` : '-'}
+                chipLabel={hasHealthScore ? summary?.healthStatus : null}
+                chipColor={healthColor}
+              >
+                {hasHealthScore &&
+                  <LinearProgress
+                    variant="determinate"
+                    value={healthScore}
+                    color={healthColor}
+                    sx={{ height: 7, borderRadius: 999 }}
+                  />
+                }
+              </AiMetricCard>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <AiMetricCard label="Rủi ro" value={risksCount} />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <AiMetricCard label="Card cần ưu tiên" value={priorityCount} />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <AiMetricCard label="Hành động đề xuất" value={actionsCount} />
+            </Grid>
+          </Grid>
+        </Stack>
+      </CardContent>
+    </Card>
+  )
+}
+
+function AiCompactItem({ chipLabel, chipColor = 'default', title, reason, actionLabel, actionText }) {
+  return (
+    <Stack spacing={0.5}>
+      <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
+        {chipLabel && <Chip size="small" label={chipLabel} color={chipColor} />}
+        <Typography variant="body2" sx={{ fontWeight: 800 }}>{title}</Typography>
+      </Stack>
+      <Typography variant="body2" color="text.secondary">
+        {reason || 'Chưa có lý do chi tiết.'}
+      </Typography>
+      {actionText &&
+        <Typography variant="caption" color="text.secondary">
+          {actionLabel}: {actionText}
+        </Typography>
+      }
+    </Stack>
+  )
+}
+
+function AiDetailTabs({ activeTab, onChangeTab, risks, priorityRecommendations, workloadInsights, nextActions }) {
+  const tabItems = [
+    {
+      value: 'risks',
+      label: 'Rủi ro',
+      items: risks,
+      emptyText: 'Chưa phát hiện rủi ro nghiêm trọng.',
+      renderItem: (item) => (
+        <AiCompactItem
+          chipLabel={item?.level || 'info'}
+          chipColor={getRiskColor(item?.level)}
+          title={item?.title || 'Rủi ro'}
+          reason={item?.reason}
+          actionLabel="Gợi ý"
+          actionText={item?.suggestedAction}
+        />
+      )
+    },
+    {
+      value: 'priority',
+      label: 'Ưu tiên',
+      items: priorityRecommendations,
+      emptyText: 'Chưa có card cần ưu tiên đặc biệt.',
+      renderItem: (item) => (
+        <AiCompactItem
+          chipLabel={item?.priority}
+          chipColor={priorityChipColors[item?.priority] || 'default'}
+          title={item?.title || 'Untitled card'}
+          reason={item?.reason}
+          actionLabel="Bước tiếp theo"
+          actionText={item?.suggestedNextStep}
+        />
+      )
+    },
+    {
+      value: 'workload',
+      label: 'Workload',
+      items: workloadInsights,
+      emptyText: 'Workload hiện chưa có dấu hiệu mất cân bằng rõ ràng.',
+      renderItem: (item) => (
+        <AiCompactItem
+          chipLabel={item?.riskLevel || 'low'}
+          chipColor={getRiskColor(item?.riskLevel)}
+          title={item?.displayName || 'Unknown member'}
+          reason={item?.reason}
+          actionLabel="Gợi ý"
+          actionText={item?.suggestedAction}
+        />
+      )
+    },
+    {
+      value: 'actions',
+      label: 'Hành động',
+      items: nextActions,
+      emptyText: 'Chưa có gợi ý hành động bổ sung.',
+      renderItem: (item) => (
+        <AiCompactItem
+          chipLabel={item?.priority}
+          chipColor={getRiskColor(item?.priority)}
+          title={item?.label || 'Hành động tiếp theo'}
+          reason={item?.reason}
+        />
+      )
+    }
+  ]
+  const activeItem = tabItems.find(item => item.value === activeTab) || tabItems[0]
+
+  return (
+    <Box>
+      <Tabs
+        value={activeItem.value}
+        onChange={(_, nextValue) => onChangeTab(nextValue)}
+        variant="scrollable"
+        allowScrollButtonsMobile
+        sx={{
+          minHeight: 38,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          '& .MuiTab-root': {
+            minHeight: 38,
+            textTransform: 'none',
+            fontWeight: 800
+          }
+        }}
+      >
+        {tabItems.map(item => (
+          <Tab
+            key={item.value}
+            value={item.value}
+            label={`${item.label} (${item.items.length})`}
+          />
+        ))}
+      </Tabs>
+
+      <Box sx={{ pt: 1.5 }}>
+        <AiListBlock
+          title={activeItem.label}
+          items={activeItem.items}
+          emptyText={activeItem.emptyText}
+          renderItem={activeItem.renderItem}
+        />
+      </Box>
+    </Box>
+  )
+}
+
+function AiAssistantSection({ analysis, isLoading, error, onAnalyze, isExpanded, activeTab, onToggleExpanded, onChangeTab }) {
+  const hasAnalysis = Boolean(analysis)
+  const risks = getSafeArray(analysis?.risks)
+  const priorityRecommendations = getSafeArray(analysis?.priorityRecommendations)
+  const workloadInsights = getSafeArray(analysis?.workloadInsights)
+  const nextActions = getSafeArray(analysis?.nextActions)
+  const warnings = getSafeArray(analysis?.warnings)
+
+  return (
+    <Card
+      variant="outlined"
+      sx={{
+        borderRadius: 2,
+        bgcolor: 'background.paper'
+      }}
+    >
+      <CardContent>
+        <Stack spacing={1.75}>
+          <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ xs: 'flex-start', md: 'center' }} justifyContent="space-between" gap={1.5}>
+            <Stack direction="row" spacing={1.25} alignItems="flex-start" sx={{ minWidth: 0 }}>
+              <Box sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                display: 'grid',
+                placeItems: 'center',
+                color: 'primary.main',
+                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                flexShrink: 0
+              }}>
+                <PsychologyIcon />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                  <Typography variant="h6" sx={{ fontWeight: 900 }}>AI Assistant</Typography>
+                  {hasAnalysis &&
+                    <Chip size="small" variant="outlined" label={getModeLabel(analysis.mode)} />
+                  }
+                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  Phân tích rủi ro, ưu tiên và workload của board.
+                </Typography>
+                {hasAnalysis &&
+                  <Typography variant="caption" color="text.secondary">
+                    Phân tích lúc: {formatGeneratedAt(analysis.generatedAt)}
+                  </Typography>
+                }
+              </Box>
+            </Stack>
+
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Button
+                variant={hasAnalysis ? 'outlined' : 'contained'}
+                startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : hasAnalysis ? <RefreshIcon /> : <AutoAwesomeIcon />}
+                disabled={isLoading}
+                onClick={onAnalyze}
+              >
+                {isLoading ? 'Đang phân tích...' : hasAnalysis ? 'Phân tích lại' : 'AI phân tích board'}
+              </Button>
+
+              {hasAnalysis &&
+                <Button
+                  variant="text"
+                  startIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                  disabled={isLoading}
+                  onClick={onToggleExpanded}
+                >
+                  {isExpanded ? 'Thu gọn' : 'Mở rộng'}
+                </Button>
+              }
+            </Stack>
+          </Stack>
+
+          {error &&
+            <Alert severity="error">{error}</Alert>
+          }
+
+          {isLoading &&
+            <Grid container spacing={1.25}>
+              <Grid item xs={12} md={6}><Skeleton variant="rounded" height={72} /></Grid>
+              <Grid item xs={12} md={6}><Skeleton variant="rounded" height={72} /></Grid>
+              <Grid item xs={12}><Skeleton variant="rounded" height={96} /></Grid>
+            </Grid>
+          }
+
+          {hasAnalysis && !isLoading &&
+            <Stack spacing={1.5}>
+              <AiSummaryBlock
+                summary={analysis.summary || {}}
+                risksCount={risks.length}
+                priorityCount={priorityRecommendations.length}
+                actionsCount={nextActions.length}
+              />
+
+              <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                <Stack spacing={1.5}>
+                  <AiDetailTabs
+                    activeTab={activeTab}
+                    onChangeTab={onChangeTab}
+                    risks={risks}
+                    priorityRecommendations={priorityRecommendations}
+                    workloadInsights={workloadInsights}
+                    nextActions={nextActions}
+                  />
+
+                  {warnings.length > 0 &&
+                    <Stack spacing={1}>
+                      {warnings.map((warning, index) => (
+                        <Alert key={`ai-warning-${index}`} severity="warning">
+                          {warning}
+                        </Alert>
+                      ))}
+                    </Stack>
+                  }
+                </Stack>
+              </Collapse>
+            </Stack>
+          }
+        </Stack>
+      </CardContent>
+    </Card>
+  )
+}
 function DashboardSkeleton() {
   return (
     <Grid container spacing={2}>
@@ -272,6 +676,11 @@ function BoardDashboard({ boardId, isActive, onDrillDown = () => {} }) {
   const [dashboard, setDashboard] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [aiAnalysis, setAiAnalysis] = useState(null)
+  const [isAiLoading, setIsAiLoading] = useState(false)
+  const [aiError, setAiError] = useState(null)
+  const [aiExpanded, setAiExpanded] = useState(false)
+  const [activeAiTab, setActiveAiTab] = useState('risks')
 
   useEffect(() => {
     if (!boardId || !isActive) return
@@ -298,6 +707,32 @@ function BoardDashboard({ boardId, isActive, onDrillDown = () => {} }) {
       isCancelled = true
     }
   }, [boardId, isActive])
+
+  useEffect(() => {
+    setAiAnalysis(null)
+    setAiError(null)
+    setIsAiLoading(false)
+    setAiExpanded(false)
+    setActiveAiTab('risks')
+  }, [boardId])
+
+  const handleAnalyzeBoardWithAI = async () => {
+    if (!boardId || isAiLoading) return
+
+    setIsAiLoading(true)
+    setAiError(null)
+
+    try {
+      const result = await analyzeBoardWithAIAPI(boardId)
+      setAiAnalysis(result)
+      setAiExpanded(false)
+      setActiveAiTab('risks')
+    } catch (err) {
+      setAiError(err?.response?.data?.message || err?.message || 'Could not analyze board with AI.')
+    } finally {
+      setIsAiLoading(false)
+    }
+  }
 
   const statusColors = useMemo(() => ({
     [CARD_STATUSES.TODO]: theme.palette.grey[500],
@@ -394,6 +829,19 @@ function BoardDashboard({ boardId, isActive, onDrillDown = () => {} }) {
               </Grid>
               <Grid item xs={12} sm={6} md={4} lg={2}>
                 <StatCard icon={<GroupIcon />} label="Checklist Avg" value={`${getNumber(dashboard.averageChecklistProgress)}%`} />
+              </Grid>
+
+              <Grid item xs={12}>
+                <AiAssistantSection
+                  analysis={aiAnalysis}
+                  isLoading={isAiLoading}
+                  error={aiError}
+                  onAnalyze={handleAnalyzeBoardWithAI}
+                  isExpanded={aiExpanded}
+                  activeTab={activeAiTab}
+                  onToggleExpanded={() => setAiExpanded(prev => !prev)}
+                  onChangeTab={setActiveAiTab}
+                />
               </Grid>
 
               <Grid item xs={12} md={6}>
