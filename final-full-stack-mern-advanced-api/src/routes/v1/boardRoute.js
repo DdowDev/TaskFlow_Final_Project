@@ -12,6 +12,9 @@ Router.route('/')
 Router.route('/:id/dashboard')
   .get(authMiddleware.isAuthorized, boardController.getDashboard)
 
+Router.route('/:id/members/:memberId')
+  .delete(authMiddleware.isAuthorized, boardValidation.removeMember, boardController.removeMember)
+
 Router.route('/:id')
   .get(authMiddleware.isAuthorized, boardController.getDetails)
   .put(authMiddleware.isAuthorized, boardValidation.update, boardController.update)

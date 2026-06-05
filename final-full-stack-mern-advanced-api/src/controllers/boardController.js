@@ -42,6 +42,16 @@ const update = async (req, res, next) => {
   } catch (error) { next(error) }
 }
 
+const removeMember = async (req, res, next) => {
+  try {
+    const userId = req.jwtDecoded._id
+    const { id: boardId, memberId } = req.params
+    const result = await boardService.removeMember(userId, boardId, memberId)
+
+    res.status(StatusCodes.OK).json(result)
+  } catch (error) { next(error) }
+}
+
 const moveCardToDifferentColumn = async (req, res, next) => {
   try {
     const result = await boardService.moveCardToDifferentColumn(req.jwtDecoded, req.body)
@@ -69,6 +79,7 @@ export const boardController = {
   getDetails,
   getDashboard,
   update,
+  removeMember,
   moveCardToDifferentColumn,
   getBoards
 }

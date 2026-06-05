@@ -24,6 +24,7 @@ import ExitToAppIcon from '@mui/icons-material/ExitToApp'
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import SubjectRoundedIcon from '@mui/icons-material/SubjectRounded'
 import DvrOutlinedIcon from '@mui/icons-material/DvrOutlined'
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 
 import ToggleFocusInput from '~/components/Form/ToggleFocusInput'
 import VisuallyHiddenInput from '~/components/Form/VisuallyHiddenInput'
@@ -33,6 +34,7 @@ import CardUserGroup from './CardUserGroup'
 import CardDescriptionMdEditor from './CardDescriptionMdEditor'
 import CardActivitySection from './CardActivitySection'
 import CardChecklistSection from './CardChecklistSection'
+import AiChecklistSuggestionDialog from './AiChecklistSuggestionDialog'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   clearAndHideCurrentActiveCard,
@@ -161,6 +163,7 @@ function ActiveCard() {
   const [anchorEl, setAnchorEl] = useState(null)
   const [dateDraft, setDateDraft] = useState({ startDate: '', dueDate: '' })
   const [isChecklistFormOpen, setIsChecklistFormOpen] = useState(false)
+  const [isAiChecklistDialogOpen, setIsAiChecklistDialogOpen] = useState(false)
 
   const currentStatus = activeCard?.status || CARD_STATUSES.TODO
   const currentPriority = activeCard?.priority || CARD_PRIORITIES.MEDIUM
@@ -173,6 +176,7 @@ function ActiveCard() {
   const checklists = Array.isArray(activeCard?.checklists) ? activeCard.checklists : []
 
   const handleCloseModal = () => {
+    setIsAiChecklistDialogOpen(false)
     dispatch(clearAndHideCurrentActiveCard())
   }
 
@@ -504,6 +508,22 @@ function ActiveCard() {
                     />
                   </Box>
                 </SidebarItem>
+
+                <SidebarItem onClick={() => setIsAiChecklistDialogOpen(true)}>
+                  <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <AutoAwesomeIcon fontSize="small" />
+                      <span>AI Checklist</span>
+                    </Box>
+                    <Chip
+                      size="small"
+                      label="Suggest"
+                      color="primary"
+                      variant="outlined"
+                      sx={{ height: 22, fontSize: '0.72rem', fontWeight: 700 }}
+                    />
+                  </Box>
+                </SidebarItem>
                 {renderComingSoonItem(LocalOfferOutlinedIcon, 'Labels')}
                 {renderComingSoonItem(AttachFileOutlinedIcon, 'Attachment')}
               </Stack>
@@ -588,6 +608,14 @@ function ActiveCard() {
             </Stack>
           </Stack>
         </Popover>
+
+        <AiChecklistSuggestionDialog
+          open={isAiChecklistDialogOpen}
+          card={activeCard}
+          checklists={checklists}
+          onClose={() => setIsAiChecklistDialogOpen(false)}
+          onUpdateCard={callApiUpdateCard}
+        />
       </Box>
     </Modal>
   )

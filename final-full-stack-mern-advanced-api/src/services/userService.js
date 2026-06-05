@@ -35,7 +35,7 @@ const createNew = async (reqBody) => {
     const getNewUser = await userModel.findOneById(createdUser.insertedId)
 
     const verificationLink = `${WEBSITE_DOMAIN}/account/verification?email=${getNewUser.email}&token=${getNewUser.verifyToken}`
-    const customSubject = 'TaskFlowDdow: Please verify your email before using our services!'
+    const customSubject = 'TaskFlow: Please verify your email before using our services!'
     const htmlContent = `
       <h3>Here is your verification link:</h3>
       <h3>${verificationLink}</h3>
