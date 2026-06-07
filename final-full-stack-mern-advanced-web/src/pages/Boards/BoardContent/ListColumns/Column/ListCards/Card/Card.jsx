@@ -117,6 +117,7 @@ function Card({ card, isDragDisabled = false }) {
 
   return (
     <MuiCard
+      id={card?._id ? `card-${card._id}` : undefined}
       onClick={setActiveCard}
       ref={setNodeRef} style={dndKitCardStyles} {...attributes} {...listeners}
       sx={{
