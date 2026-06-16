@@ -143,14 +143,44 @@ function BoardFilterPanel({
             }
             label="Assigned to me"
           />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={filters.unassigned || false}
+                onChange={(event) => onChangeFilters({ unassigned: event.target.checked })}
+              />
+            }
+            label="Chưa có người phụ trách"
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={filters.lowChecklist || false}
+                onChange={(event) => onChangeFilters({ lowChecklist: event.target.checked })}
+              />
+            }
+            label="Checklist chưa đạt (< 50%)"
+          />
         </Stack>
+
+        {filters.cardIds?.length > 0 && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Chip
+              label={`AI Filter: ${filters.cardIds.length} thẻ`}
+              color="primary"
+              size="small"
+              variant="outlined"
+              onDelete={() => onChangeFilters({ cardIds: [] })}
+            />
+          </Box>
+        )}
 
         <Button
           variant="outlined"
           disabled={!filterActiveCount}
           onClick={onClearFilters}
         >
-          Clear filters
+          Xóa bộ lọc
         </Button>
       </Stack>
     </Box>

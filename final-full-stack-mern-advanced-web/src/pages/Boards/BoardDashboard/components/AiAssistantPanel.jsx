@@ -69,13 +69,23 @@ const getRiskColor = (level) => {
   return 'default'
 }
 
-const getRiskPatch = (risk) => {
-  const level = String(risk?.level || '').toLowerCase()
+const buildFilterFromRisk = (risk) => {
+  const title = String(risk?.title || '').toLowerCase()
+  const relatedCardIds = Array.isArray(risk?.relatedCardIds) ? risk.relatedCardIds.filter(Boolean) : []
 
-  if (['urgent', 'critical'].includes(level)) return { priorities: [CARD_PRIORITIES.URGENT] }
-  if (level === 'high') return { priorities: [CARD_PRIORITIES.HIGH, CARD_PRIORITIES.URGENT] }
-  if (level === 'medium') return { priorities: [CARD_PRIORITIES.MEDIUM, CARD_PRIORITIES.HIGH] }
-  return { priorities: [CARD_PRIORITIES.LOW, CARD_PRIORITIES.MEDIUM, CARD_PRIORITIES.HIGH, CARD_PRIORITIES.URGENT] }
+  // Overdue risk → dùng semantic overdue filter (ọn toàn bộ overdue cards, không chỉ relatedCardIds)
+  if (title.includes('overdue')) return { overdue: true, dueSoon: false }
+
+  // Deadline / due soon risk → semantic dueSoon filter
+  if (title.includes('deadline') || title.includes('due soon') || title.includes('upcoming')) {
+    return { dueSoon: true, overdue: false }
+  }
+
+  // Checklist, stale, unassigned hoặc bất kỳ rủi ro có card ID cụ thể → filter theo card IDs
+  if (relatedCardIds.length > 0) return { cardIds: relatedCardIds }
+
+  // Workload imbalance không có card IDs — xử lý qua tab workload memberId filter
+  return {}
 }
 
 const formatGeneratedAt = (value) => {
@@ -408,17 +418,20 @@ function AiAssistantPanel({
       label: 'Rủi ro',
       items: risks,
       emptyText: 'Chưa phát hiện rủi ro nghiêm trọng.',
-      renderItem: (item) => (
-        <AiTabItem
-          chipLabel={item?.level || 'info'}
-          chipColor={getRiskColor(item?.level)}
-          title={item?.title || 'Rủi ro'}
-          reason={item?.reason}
-          actionLabel="Gợi ý"
-          actionText={item?.suggestedAction}
-          onAction={() => onDrillDown(getRiskPatch(item))}
-        />
-      )
+      renderItem: (item) => {
+        const riskFilter = buildFilterFromRisk(item)
+        return (
+          <AiTabItem
+            chipLabel={item?.level || 'info'}
+            chipColor={getRiskColor(item?.level)}
+            title={item?.title || 'Rủi ro'}
+            reason={item?.reason}
+            actionLabel="Gợi ý"
+            actionText={item?.suggestedAction}
+            onAction={Object.keys(riskFilter).length > 0 ? () => onDrillDown(riskFilter) : null}
+          />
+        )
+      }
     },
     {
       value: 'priority',
@@ -433,7 +446,7 @@ function AiAssistantPanel({
           reason={item?.reason}
           actionLabel="Bước tiếp theo"
           actionText={item?.suggestedNextStep}
-          onAction={item?.priority ? () => onDrillDown({ priorities: [item.priority] }) : null}
+          onAction={item?.cardId ? () => onDrillDown({ cardIds: [item.cardId] }) : null}
         />
       )
     },
@@ -450,6 +463,7 @@ function AiAssistantPanel({
           reason={item?.reason}
           actionLabel="Gợi ý"
           actionText={item?.suggestedAction}
+          onAction={item?.memberId ? () => onDrillDown({ memberId: item.memberId }) : null}
         />
       )
     },
@@ -591,7 +605,10 @@ function AiAssistantPanel({
                       title={topRisk.title || 'Rủi ro cần chú ý'}
                       reason={topRisk.reason}
                       actionLabel="Lọc"
-                      onAction={() => onDrillDown(getRiskPatch(topRisk))}
+                      onAction={() => {
+                      const riskFilter = buildFilterFromRisk(topRisk)
+                      if (Object.keys(riskFilter).length > 0) onDrillDown(riskFilter)
+                    }}
                     />
                   }
 
@@ -602,7 +619,7 @@ function AiAssistantPanel({
                       title={topCard.title || 'Card cần ưu tiên'}
                       reason={topCard.reason}
                       actionLabel="Lọc"
-                      onAction={topCard.priority ? () => onDrillDown({ priorities: [topCard.priority] }) : null}
+                      onAction={topCard.cardId ? () => onDrillDown({ cardIds: [topCard.cardId] }) : null}
                     />
                   }
 
