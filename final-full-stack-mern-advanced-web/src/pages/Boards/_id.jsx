@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Container from '@mui/material/Container'
 import Box from '@mui/material/Box'
 import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
+import Fade from '@mui/material/Fade'
 import AppBar from '~/components/AppBar/AppBar'
 import BoardBar from './BoardBar/BoardBar'
 import BoardContent from './BoardContent/BoardContent'
@@ -21,7 +22,7 @@ import {
   selectCurrentActiveBoard
 } from '~/redux/activeBoard/activeBoardSlice'
 import { useDispatch, useSelector } from 'react-redux'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import PageLoadingSpinner from '~/components/Loading/PageLoadingSpinner'
 import ActiveCard from '~/components/Modal/ActiveCard/ActiveCard'
 import { selectCurrentUser } from '~/redux/user/userSlice'
@@ -33,10 +34,14 @@ const getDefaultBoardFilters = () => ({
   priorities: [],
   overdue: false,
   dueSoon: false,
-  assignedToMe: false
+  assignedToMe: false,
+  memberId: '',
+  cardIds: [],
+  unassigned: false,
+  lowChecklist: false
 })
 
-const getIdValue = (value) => value?._id || value
+const getIdValue = (value) => value?._id || value?.id || value
 const isSameId = (firstId, secondId) => getIdValue(firstId)?.toString() === getIdValue(secondId)?.toString()
 
 const getTimestamp = (value) => {
@@ -63,6 +68,15 @@ const isAssignedToUser = (card, userId) => {
   return memberIds.some(memberId => isSameId(memberId, userId))
 }
 
+const isLowChecklistCard = (card) => {
+  if (isClosedStatus(card?.status)) return false
+  const checklists = Array.isArray(card?.checklists) ? card.checklists : []
+  const items = checklists.flatMap(c => Array.isArray(c?.items) ? c.items : [])
+  if (!items.length) return false
+  const completed = items.filter(item => item?.isCompleted).length
+  return Math.round((completed / items.length) * 100) < 50
+}
+
 const getFilterActiveCount = (filters) => {
   let count = 0
   if (filters.search) count += 1
@@ -71,6 +85,10 @@ const getFilterActiveCount = (filters) => {
   if (filters.overdue) count += 1
   if (filters.dueSoon) count += 1
   if (filters.assignedToMe) count += 1
+  if (filters.memberId) count += 1
+  if (filters.cardIds?.length) count += 1
+  if (filters.unassigned) count += 1
+  if (filters.lowChecklist) count += 1
   return count
 }
 
@@ -84,6 +102,16 @@ const doesCardMatchFilters = (card, filters, currentUserId) => {
   if (filters.overdue && !isOverdueCard(card)) return false
   if (filters.dueSoon && !isDueSoonCard(card)) return false
   if (filters.assignedToMe && !isAssignedToUser(card, currentUserId)) return false
+  if (filters.memberId && !isAssignedToUser(card, filters.memberId)) return false
+  if (filters.cardIds?.length) {
+    const cardId = card?._id?.toString?.() || String(card?._id || '')
+    if (!filters.cardIds.includes(cardId)) return false
+  }
+  if (filters.unassigned) {
+    const memberIds = Array.isArray(card?.memberIds) ? card.memberIds : []
+    if (memberIds.length > 0) return false
+  }
+  if (filters.lowChecklist && !isLowChecklistCard(card)) return false
 
   return true
 }
@@ -102,8 +130,11 @@ function Board() {
   const currentUser = useSelector(selectCurrentUser)
   const [activeBoardView, setActiveBoardView] = useState('kanban')
   const [boardFilters, setBoardFilters] = useState(getDefaultBoardFilters)
+  const lastScrolledElementRef = useRef('')
 
   const { boardId } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const queryMemberId = searchParams.get('filterMember') || ''
 
   useEffect(() => {
     // Call API
@@ -114,6 +145,23 @@ function Board() {
     setBoardFilters(getDefaultBoardFilters())
     setActiveBoardView('kanban')
   }, [boardId])
+
+  useEffect(() => {
+    setBoardFilters(prevFilters => {
+      if ((prevFilters.memberId || '') === queryMemberId) return prevFilters
+      return { ...prevFilters, memberId: queryMemberId }
+    })
+
+    if (queryMemberId) setActiveBoardView('kanban')
+  }, [queryMemberId])
+
+  const updateFilterMemberQuery = useCallback((memberId, options = {}) => {
+    const nextParams = new URLSearchParams(searchParams)
+    if (memberId) nextParams.set('filterMember', memberId)
+    else nextParams.delete('filterMember')
+
+    setSearchParams(nextParams, options)
+  }, [searchParams, setSearchParams])
 
   const updateBoardFilters = useCallback((filterPatch) => {
     setBoardFilters(prevFilters => {
@@ -126,7 +174,14 @@ function Board() {
 
   const clearBoardFilters = useCallback(() => {
     setBoardFilters(getDefaultBoardFilters())
-  }, [])
+    updateFilterMemberQuery('', { replace: true })
+    lastScrolledElementRef.current = ''
+  }, [updateFilterMemberQuery])
+
+  const clearMemberFilter = useCallback(() => {
+    setBoardFilters(prevFilters => ({ ...prevFilters, memberId: '' }))
+    updateFilterMemberQuery('', { replace: true })
+  }, [updateFilterMemberQuery])
 
   const filterActiveCount = useMemo(() => getFilterActiveCount(boardFilters), [boardFilters])
   const isFilterActive = filterActiveCount > 0
@@ -145,13 +200,54 @@ function Board() {
 
   const matchedCardsCount = useMemo(() => countCardsInBoard(filteredBoard), [filteredBoard])
 
+  const firstMatchedCardId = useMemo(() => {
+    if (!isFilterActive) return null
+
+    for (const column of filteredBoard?.columns || []) {
+      const matchedCard = (column.cards || []).find(card => !card?.FE_PlaceholderCard && card?._id)
+      if (matchedCard?._id) return matchedCard._id
+    }
+
+    return null
+  }, [isFilterActive, filteredBoard])
+
+  const memberFilterUser = useMemo(() => {
+    if (!boardFilters.memberId) return null
+    const boardUsers = [...(board?.owners || []), ...(board?.members || [])]
+    return boardUsers.find(user => isSameId(user?._id || user?.id, boardFilters.memberId))
+  }, [board?.members, board?.owners, boardFilters.memberId])
+
+  const memberFilterName = memberFilterUser?.displayName || memberFilterUser?.username || memberFilterUser?.email
+
   const handleDashboardDrillDown = useCallback((filterPatch) => {
-    setBoardFilters({
+    const nextFilters = {
       ...getDefaultBoardFilters(),
       ...filterPatch
-    })
+    }
+
+    lastScrolledElementRef.current = ''
+    setBoardFilters({ ...nextFilters })
     setActiveBoardView('kanban')
-  }, [])
+
+    updateFilterMemberQuery(nextFilters.memberId || '')
+  }, [updateFilterMemberQuery])
+
+  useEffect(() => {
+    if (activeBoardView !== 'kanban' || !isFilterActive || !firstMatchedCardId) return
+
+    const scrollKey = String(firstMatchedCardId)
+    if (lastScrolledElementRef.current === scrollKey) return
+
+    const timeoutId = setTimeout(() => {
+      const targetCard = document.getElementById(`card-${firstMatchedCardId}`)
+      if (!targetCard) return
+
+      targetCard.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
+      lastScrolledElementRef.current = scrollKey
+    }, 350)
+
+    return () => clearTimeout(timeoutId)
+  }, [activeBoardView, isFilterActive, firstMatchedCardId])
 
   /**
    * Func này có nhiệm vụ gọi API và xử lý khi kéo thả Column xong xuôi
@@ -234,6 +330,18 @@ function Board() {
   }
 
   const isBoardOwner = board?.owners?.some(owner => owner._id === currentUser?._id)
+  const filterAlertActions = (
+    <Box sx={{ display: 'flex', gap: 1 }}>
+      {boardFilters.memberId &&
+        <Button color="inherit" size="small" onClick={clearMemberFilter}>
+          Clear member
+        </Button>
+      }
+      <Button color="inherit" size="small" onClick={clearBoardFilters}>
+        Clear filters
+      </Button>
+    </Box>
+  )
 
   return (
     <Container disableGutters maxWidth={false} sx={{ height: '100vh' }}>
@@ -255,50 +363,56 @@ function Board() {
       {isFilterActive &&
         <Alert
           severity="info"
-          action={
-            <Button color="inherit" size="small" onClick={clearBoardFilters}>
-              Clear filters
-            </Button>
-          }
+          action={filterAlertActions}
           sx={{ borderRadius: 0 }}
         >
-          Filtering is active. Drag and drop is disabled while filters are applied.
+          {boardFilters.cardIds?.length > 0
+            ? `AI Filter: ${boardFilters.cardIds.length} thẻ được lọc từ phân tích AI. `
+            : boardFilters.memberId
+              ? `Đang lọc công việc của ${memberFilterName || 'thành viên đã chọn'}. `
+              : boardFilters.unassigned
+                ? 'Đang lọc các thẻ chưa được phân công. '
+                : boardFilters.lowChecklist
+                  ? 'Đang lọc các thẻ có tiến độ checklist dưới 50%. '
+                  : ''
+          }
+          Kéo thả bị tắt khi đang lọc.
         </Alert>
       }
 
       {isFilterActive && matchedCardsCount === 0 &&
         <Alert
           severity="warning"
-          action={
-            <Button color="inherit" size="small" onClick={clearBoardFilters}>
-              Clear filters
-            </Button>
-          }
+          action={filterAlertActions}
           sx={{ borderRadius: 0 }}
         >
           No cards match your current filters.
         </Alert>
       }
 
-      <Box sx={{ display: activeBoardView === 'kanban' ? 'block' : 'none' }}>
-        <BoardContent
-          board={filteredBoard}
-          canManageColumns={isBoardOwner}
-          isDragDisabled={isFilterActive}
-          // 3 cái trường hợp move dưới đây thì giữ nguyên để code xử lý kéo thả ở phần BoardContent không bị quá dài mất kiểm soát khi đọc code, maintain.
-          moveColumns={moveColumns}
-          moveCardInTheSameColumn={moveCardInTheSameColumn}
-          moveCardToDifferentColumn={moveCardToDifferentColumn}
-        />
-      </Box>
+      <Fade in={activeBoardView === 'kanban'} timeout={250}>
+        <Box sx={{ display: activeBoardView === 'kanban' ? 'block' : 'none' }}>
+          <BoardContent
+            board={filteredBoard}
+            canManageColumns={isBoardOwner}
+            isDragDisabled={isFilterActive}
+            // 3 cái trường hợp move dưới đây thì giữ nguyên để code xử lý kéo thả ở phần BoardContent không bị quá dài mất kiểm soát khi đọc code, maintain.
+            moveColumns={moveColumns}
+            moveCardInTheSameColumn={moveCardInTheSameColumn}
+            moveCardToDifferentColumn={moveCardToDifferentColumn}
+          />
+        </Box>
+      </Fade>
 
-      <Box sx={{ display: activeBoardView === 'dashboard' ? 'block' : 'none' }}>
-        <BoardDashboard
-          boardId={board._id}
-          isActive={activeBoardView === 'dashboard'}
-          onDrillDown={handleDashboardDrillDown}
-        />
-      </Box>
+      <Fade in={activeBoardView === 'dashboard'} timeout={250}>
+        <Box sx={{ display: activeBoardView === 'dashboard' ? 'block' : 'none' }}>
+          <BoardDashboard
+            boardId={board._id}
+            isActive={activeBoardView === 'dashboard'}
+            onDrillDown={handleDashboardDrillDown}
+          />
+        </Box>
+      </Fade>
     </Container>
   )
 }

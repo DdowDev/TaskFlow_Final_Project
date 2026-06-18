@@ -44,6 +44,10 @@ const statusChipColors = {
 }
 
 const getNumber = (value) => Number.isFinite(Number(value)) ? Number(value) : 0
+const getMemberId = (member) => {
+  const memberId = member?.memberId?._id || member?.memberId?.id || member?.memberId || member?._id || member?.id
+  return memberId ? memberId.toString() : ''
+}
 
 const getAssigneeLabel = (assignees) => {
   if (!Array.isArray(assignees) || !assignees.length) return 'Unassigned'
@@ -210,11 +214,12 @@ function CardListItem({ card, onClick }) {
   )
 }
 
-function WorkloadRow({ member, maxCards }) {
+function WorkloadRow({ member, maxCards, onMemberClick }) {
   const totalCards = getNumber(member?.totalCards)
   const memberName = member?.displayName || member?.email || 'Unknown member'
+  const canClick = typeof onMemberClick === 'function'
 
-  return (
+  const content = (
     <Stack spacing={0.75}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
         <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
@@ -238,6 +243,29 @@ function WorkloadRow({ member, maxCards }) {
         }}
       />
     </Stack>
+  )
+
+  if (!canClick) return content
+
+  return (
+    <ButtonBase
+      onClick={onMemberClick}
+      title={`Lọc công việc của ${memberName}`}
+      sx={{
+        display: 'block',
+        width: '100%',
+        textAlign: 'left',
+        borderRadius: 1,
+        p: 0.75,
+        mx: -0.75,
+        cursor: 'pointer',
+        '&:hover': {
+          bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06)
+        }
+      }}
+    >
+      {content}
+    </ButtonBase>
   )
 }
 
@@ -294,9 +322,10 @@ function WorkSection({ overdueCards, dueSoonCards, memberWorkload, onDrillDown }
           <Stack spacing={1.5}>
             {safeMemberWorkload.map(member => (
               <WorkloadRow
-                key={member?.memberId || member?.email || member?.displayName}
+                key={getMemberId(member) || member?.email || member?.displayName}
                 member={member}
                 maxCards={maxCards}
+                onMemberClick={getMemberId(member) ? () => onDrillDown({ memberId: getMemberId(member) }) : undefined}
               />
             ))}
           </Stack>

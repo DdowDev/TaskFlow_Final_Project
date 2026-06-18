@@ -29,6 +29,19 @@ const logAiDebug = (scope, message, data = {}) => {
   console.log(`[AI][${scope}] ${message}`, data)
 }
 
+const logInvalidJsonPreview = (scope, outputText, parseError) => {
+  if (!isDevMode()) return
+
+  const text = typeof outputText === 'string' ? outputText : ''
+  // eslint-disable-next-line no-console
+  console.log(`[AI][${scope}] invalidJsonPreview`, {
+    outputChars: text.length,
+    first300: text.slice(0, 300),
+    last300: text.slice(-300),
+    parseError: parseError?.message || 'Unknown JSON parse error.'
+  })
+}
+
 const toId = (value) => {
   if (!value) return ''
   if (value._id) return toId(value._id)
@@ -196,9 +209,6 @@ const boardAnalysisSchema = {
   type: 'object',
   additionalProperties: false,
   required: [
-    'mode',
-    'generatedAt',
-    'boardId',
     'summary',
     'risks',
     'priorityRecommendations',
@@ -208,9 +218,6 @@ const boardAnalysisSchema = {
     'warnings'
   ],
   properties: {
-    mode: { type: 'string' },
-    generatedAt: { type: 'number' },
-    boardId: { type: 'string' },
     summary: {
       type: 'object',
       additionalProperties: false,
@@ -369,6 +376,55 @@ const assertCanUseOpenAI = () => {
 
 const createClient = () => new OpenAI({ apiKey: env.AI_API_KEY })
 
+const getOutputTextFromResponse = (response) => {
+  if (typeof response?.output_text === 'string' && response.output_text.trim()) {
+    return response.output_text
+  }
+
+  const output = safeArray(response?.output)
+  const textParts = output.flatMap(item => safeArray(item?.content))
+    .filter(content => content?.type === 'output_text' && typeof content?.text === 'string')
+    .map(content => content.text)
+
+  return textParts.join('')
+}
+
+const cleanAiJsonText = (outputText) => {
+  if (typeof outputText !== 'string') return ''
+
+  let text = outputText.trim()
+  if (!text) return ''
+
+  text = text
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim()
+
+  const firstBraceIndex = text.indexOf('{')
+  const lastBraceIndex = text.lastIndexOf('}')
+
+  if (firstBraceIndex !== -1 && lastBraceIndex !== -1 && lastBraceIndex > firstBraceIndex) {
+    text = text.slice(firstBraceIndex, lastBraceIndex + 1).trim()
+  }
+
+  return text
+}
+
+const safeParseAiJsonOutput = (outputText, scope) => {
+  try {
+    return JSON.parse(outputText)
+  } catch (rawParseError) {
+    const cleanedText = cleanAiJsonText(outputText)
+
+    try {
+      return JSON.parse(cleanedText)
+    } catch (cleanedParseError) {
+      logInvalidJsonPreview(scope, outputText, cleanedParseError)
+      throw new Error('OpenAI returned invalid JSON.')
+    }
+  }
+}
+
 const callOpenAIJson = async ({ scope, instructions, input, schema, schemaName, maxOutputTokens = 1800 }) => {
   const payload = JSON.stringify(input)
   logAiDebug(scope, 'request', {
@@ -398,7 +454,7 @@ const callOpenAIJson = async ({ scope, instructions, input, schema, schemaName, 
       }
     }, { timeout: getTimeoutMs() })
 
-    const outputText = response.output_text
+    const outputText = getOutputTextFromResponse(response)
     if (!outputText) {
       throw new Error('OpenAI returned an empty response.')
     }
@@ -407,11 +463,7 @@ const callOpenAIJson = async ({ scope, instructions, input, schema, schemaName, 
       outputChars: outputText.length
     })
 
-    try {
-      return JSON.parse(outputText)
-    } catch (error) {
-      throw new Error('OpenAI returned invalid JSON.')
-    }
+    return safeParseAiJsonOutput(outputText, scope)
   } catch (error) {
     logAiDebug(scope, 'fallbackReason', getAiErrorInfo(error))
     throw error
@@ -520,7 +572,8 @@ Hãy phân tích dữ liệu board bằng tiếng Việt, ngắn gọn, có tín
 Không chỉ đọc lại số liệu dashboard. Hãy nêu rủi ro, lý do, card cần ưu tiên, workload và hành động tiếp theo.
 Không bịa cardId/memberId ngoài dữ liệu đầu vào. Nếu thiếu dữ liệu, thêm cảnh báo phù hợp.
 Giới hạn kết quả: risks tối đa 3, priorityRecommendations tối đa 3, workloadInsights tối đa 3, nextActions tối đa 3, analyzedCards tối đa 5.
-Mỗi title/reason/action cần ngắn gọn, ưu tiên insight quan trọng nhất.
+Mỗi title/reason/action cần ngắn gọn, tối đa một câu ngắn, ưu tiên insight quan trọng nhất.
+Chỉ trả một JSON object duy nhất. Không trả markdown. Không bọc kết quả trong \`\`\`json. Không cần trả mode, generatedAt, boardId vì backend sẽ tự gắn.
 Chỉ trả về JSON đúng schema.
 `
 
