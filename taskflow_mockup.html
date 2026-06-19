@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow — Redesign Mockup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-base:       #0d0f14;
+      --bg-surface:    #13161e;
+      --bg-elevated:   #1a1e2a;
+      --bg-card:       #1f2436;
+      --bg-hover:      #252a3a;
+
+      --border-subtle: rgba(255,255,255,0.06);
+      --border-strong: rgba(255,255,255,0.12);
+
+      --brand:         #6366f1;
+      --brand-light:   #818cf8;
+      --brand-glow:    rgba(99,102,241,0.25);
+
+      --col-todo:      #3b82f6;
+      --col-progress:  #a855f7;
+      --col-review:    #f59e0b;
+      --col-done:      #10b981;
+
+      --tag-high:      #ef4444;
+      --tag-medium:    #f59e0b;
+      --tag-low:       #10b981;
+      --tag-urgent:    #ec4899;
+
+      --text-primary:  #f1f5f9;
+      --text-secondary:#94a3b8;
+      --text-muted:    #475569;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
+    }
+
+    html, body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ========== TOPBAR ========== */
+    .topbar {
+      height: 52px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text-primary);
+      margin-right: 32px;
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, var(--brand), #8b5cf6);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2px;
+      list-style: none;
+      flex: 1;
+    }
+    .nav-links a {
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: all 0.15s;
+      font-weight: 500;
+    }
+    .nav-links a:hover { color: var(--text-primary); background: var(--bg-elevated); }
+    .nav-links a.active { color: var(--text-primary); background: var(--bg-elevated); }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+    }
+
+    .board-info-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .board-dot { width: 6px; height: 6px; background: var(--col-done); border-radius: 50%; }
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      color: var(--text-muted);
+      width: 180px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .search-bar:hover { border-color: var(--border-strong); }
+
+    .btn-invite {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px;
+      background: var(--brand);
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .btn-invite:hover {
+      background: var(--brand-light);
+      box-shadow: 0 0 16px var(--brand-glow);
+    }
+
+    .avatar-stack { display: flex; }
+    .avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--bg-surface);
+      margin-left: -6px;
+      object-fit: cover;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
+    }
+    .avatar:first-child { margin-left: 0; }
+    .av1 { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+    .av2 { background: linear-gradient(135deg, #ec4899, #f43f5e); }
+    .av3 { background: linear-gradient(135deg, #06b6d4, #3b82f6); }
+
+    /* ========== SUB-TOPBAR ========== */
+    .sub-topbar {
+      height: 44px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 8px;
+    }
+
+    .sub-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .sub-btn:hover { color: var(--text-primary); background: var(--bg-elevated); }
+    .sub-btn.active {
+      color: var(--brand-light);
+      background: rgba(99,102,241,0.12);
+    }
+
+    .divider-v { width: 1px; height: 18px; background: var(--border-subtle); margin: 0 4px; }
+
+    /* ========== VIEW SWITCHER ========== */
+    .view-toggle {
+      display: flex;
+      gap: 4px;
+      padding: 16px 20px 0;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+    }
+    .view-tab {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.2s;
+    }
+    .view-tab:hover { color: var(--text-primary); }
+    .view-tab.active { color: var(--brand-light); border-bottom-color: var(--brand); }
+
+    /* ========== VIEWS ========== */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ========== KANBAN BOARD ========== */
+    .board-wrapper {
+      padding: 20px;
+      overflow-x: auto;
+      min-height: calc(100vh - 145px);
+      background: var(--bg-base);
+    }
+
+    .board {
+      display: flex;
+      gap: 14px;
+      min-width: max-content;
+      align-items: flex-start;
+    }
+
+    .column {
+      width: 280px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .col-header {
+      padding: 14px 16px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .col-accent {
+      width: 3px;
+      height: 16px;
+      border-radius: 2px;
+    }
+    .accent-todo     { background: var(--col-todo); box-shadow: 0 0 8px var(--col-todo); }
+    .accent-progress { background: var(--col-progress); box-shadow: 0 0 8px var(--col-progress); }
+    .accent-review   { background: var(--col-review); box-shadow: 0 0 8px var(--col-review); }
+    .accent-done     { background: var(--col-done); box-shadow: 0 0 8px var(--col-done); }
+
+    .col-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      flex: 1;
+    }
+
+    .col-count {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: var(--bg-elevated);
+      color: var(--text-muted);
+    }
+
+    .col-add {
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      line-height: 1;
+    }
+    .col-add:hover { color: var(--text-primary); background: var(--bg-elevated); }
+
+    .col-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+
+    /* ========== CARD ========== */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    }
+    .card:hover {
+      border-color: var(--border-strong);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(99,102,241,0.15);
+    }
+
+    .card-thumb {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      display: block;
+      background: var(--bg-elevated);
+    }
+
+    .card-body { padding: 12px; }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+
+    .tag {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+    .tag-high    { background: rgba(239,68,68,0.15);   color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+    .tag-medium  { background: rgba(245,158,11,0.15);  color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+    .tag-low     { background: rgba(16,185,129,0.15);  color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+    .tag-urgent  { background: rgba(236,72,153,0.15);  color: #f472b6; border: 1px solid rgba(236,72,153,0.25); }
+    .tag-overdue { background: rgba(239,68,68,0.1);    color: #fc8181; border: 1px solid rgba(239,68,68,0.2); }
+    .tag-done    { background: rgba(16,185,129,0.1);   color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+    .tag-feature { background: rgba(99,102,241,0.12);  color: #a5b4fc; border: 1px solid rgba(99,102,241,0.25); }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.45;
+      margin-bottom: 10px;
+    }
+
+    .card-date {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .card-date svg { opacity: 0.6; }
+    .date-overdue { color: #f87171 !important; }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-avatars { display: flex; }
+    .card-avatar {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 1.5px solid var(--bg-card);
+      margin-left: -5px;
+      font-size: 9px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
+    }
+    .card-avatar:first-child { margin-left: 0; }
+
+    .card-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .progress-bar-wrap {
+      margin: 8px 0;
+    }
+    .progress-bar-track {
+      height: 3px;
+      background: var(--bg-elevated);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+    .fill-todo     { background: var(--col-todo); }
+    .fill-progress { background: linear-gradient(90deg, var(--brand), var(--col-progress)); }
+    .fill-review   { background: var(--col-review); }
+    .fill-done     { background: var(--col-done); }
+
+    .progress-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .add-card-btn {
+      width: 100%;
+      padding: 9px;
+      border: 1.5px dashed var(--border-subtle);
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .add-card-btn:hover {
+      border-color: var(--brand);
+      color: var(--brand-light);
+      background: rgba(99,102,241,0.05);
+    }
+
+    /* ========== DASHBOARD ========== */
+    .dashboard-wrapper {
+      padding: 24px;
+      background: var(--bg-base);
+      min-height: calc(100vh - 145px);
+    }
+
+    .dash-header {
+      margin-bottom: 24px;
+    }
+    .dash-header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    .dash-header p {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .stat-card.s-total::after    { background: var(--brand); }
+    .stat-card.s-done::after     { background: var(--col-done); }
+    .stat-card.s-overdue::after  { background: var(--tag-high); }
+    .stat-card.s-soon::after     { background: var(--col-review); }
+    .stat-card.s-nodate::after   { background: var(--text-muted); }
+    .stat-card.s-checklist::after{ background: var(--col-progress); }
+
+    .stat-card:hover {
+      border-color: var(--border-strong);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+
+    .stat-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-value span { font-size: 16px; font-weight: 500; color: var(--text-muted); }
+
+    .stat-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .stat-sub.danger  { color: #f87171; }
+    .stat-sub.success { color: #34d399; }
+    .stat-sub.warning { color: #fbbf24; }
+
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .dash-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    .panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .panel-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .panel-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    .badge-red    { background: rgba(239,68,68,0.15); color: #f87171; }
+    .badge-yellow { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    .badge-blue   { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+
+    .chart-wrap {
+      position: relative;
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* AI Panel */
+    .ai-panel {
+      background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08));
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .ai-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--brand), #8b5cf6);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+      box-shadow: 0 0 20px rgba(99,102,241,0.3);
+    }
+    .ai-text h3 { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+    .ai-text p  { font-size: 12px; color: var(--text-secondary); }
+    .ai-btn {
+      margin-left: auto;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, var(--brand), #8b5cf6);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      white-space: nowrap;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+    }
+    .ai-btn:hover { box-shadow: 0 4px 20px rgba(99,102,241,0.5); transform: translateY(-1px); }
+
+    /* Overdue list */
+    .overdue-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .overdue-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .overdue-item-left { flex: 1; min-width: 0; }
+    .overdue-item-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+    .overdue-item-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .overdue-days {
+      font-size: 11px;
+      font-weight: 600;
+      color: #f87171;
+      white-space: nowrap;
+    }
+
+    /* Workload */
+    .workload-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .workload-item:last-child { margin-bottom: 0; }
+    .workload-av {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .workload-info { flex: 1; min-width: 0; }
+    .workload-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    .workload-bar {
+      height: 4px;
+      background: var(--bg-elevated);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .workload-fill {
+      height: 100%;
+      border-radius: 2px;
+    }
+    .workload-count {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    /* Legend */
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    .legend-dot {
+      width: 8px; height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card      { animation: fadeUp 0.3s ease both; }
+    .stat-card { animation: fadeUp 0.3s ease both; }
+    .card:nth-child(1)      { animation-delay: 0.05s; }
+    .card:nth-child(2)      { animation-delay: 0.10s; }
+    .card:nth-child(3)      { animation-delay: 0.15s; }
+    .stat-card:nth-child(1) { animation-delay: 0.05s; }
+    .stat-card:nth-child(2) { animation-delay: 0.08s; }
+    .stat-card:nth-child(3) { animation-delay: 0.11s; }
+    .stat-card:nth-child(4) { animation-delay: 0.14s; }
+    .stat-card:nth-child(5) { animation-delay: 0.17s; }
+    .stat-card:nth-child(6) { animation-delay: 0.20s; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 30px 20px;
+      color: var(--text-muted);
+    }
+    .empty-state .icon { font-size: 32px; margin-bottom: 8px; opacity: 0.5; }
+    .empty-state p { font-size: 12px; }
+  </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<nav class="topbar">
+  <a class="logo" href="#">
+    <div class="logo-icon">⚡</div>
+    TaskFlow
+  </a>
+  <ul class="nav-links">
+    <li><a href="#">Workspaces</a></li>
+    <li><a href="#">Recent</a></li>
+    <li><a href="#">Starred</a></li>
+    <li><a href="#">Templates</a></li>
+    <li><a href="#">+ Create</a></li>
+  </ul>
+  <div class="topbar-right">
+    <div class="board-info-pill">
+      <div class="board-dot"></div>
+      Dev Game 3A
+    </div>
+    <div class="search-bar">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Type to search...
+    </div>
+    <div class="avatar-stack">
+      <div class="avatar av1">A</div>
+      <div class="avatar av2">L</div>
+      <div class="avatar av3">T</div>
+    </div>
+    <button class="btn-invite">+ Invite</button>
+  </div>
+</nav>
+
+<!-- SUB-TOPBAR -->
+<div class="sub-topbar">
+  <button class="sub-btn">🗂 Board info</button>
+  <button class="sub-btn">🌐 Public</button>
+  <div class="divider-v"></div>
+  <button class="sub-btn">⚡ Automation</button>
+  <button class="sub-btn active">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>
+    Filters
+  </button>
+  <div class="divider-v"></div>
+</div>
+
+<!-- VIEW TABS -->
+<div class="view-toggle">
+  <button class="view-tab active" onclick="switchView('kanban', this)">⊞ Kanban</button>
+  <button class="view-tab" onclick="switchView('dashboard', this)">📊 Dashboard</button>
+</div>
+
+<!-- ===== KANBAN VIEW ===== -->
+<div id="view-kanban" class="view active">
+  <div class="board-wrapper">
+    <div class="board">
+
+      <!-- COL: Need to do -->
+      <div class="column">
+        <div class="col-header">
+          <div class="col-accent accent-todo"></div>
+          <span class="col-title">Need to do</span>
+          <span class="col-count">3</span>
+          <button class="col-add">+</button>
+        </div>
+        <div class="col-body">
+
+          <div class="card">
+            <img class="card-thumb" src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&q=80" alt="code" />
+            <div class="card-body">
+              <div class="card-tags">
+                <span class="tag tag-medium">Medium</span>
+                <span class="tag tag-feature">Frontend</span>
+              </div>
+              <div class="card-title">Làm Frontend cho màn hình đăng nhập</div>
+              <div class="card-date date-overdue">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                May 21 – May 30 · <strong style="color:#f87171">Overdue 20d</strong>
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-label">Checklist · 1/3</div>
+                <div class="progress-bar-track"><div class="progress-bar-fill fill-todo" style="width:33%"></div></div>
+              </div>
+              <div class="card-footer">
+                <div class="card-avatars">
+                  <div class="card-avatar av1">A</div>
+                  <div class="card-avatar av2">L</div>
+                </div>
+                <div class="card-meta">
+                  <div class="card-meta-item">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    2
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-body">
+              <div class="card-tags">
+                <span class="tag tag-urgent">Urgent</span>
+              </div>
+              <div class="card-title">Kiểm thử phần mềm — Module Auth</div>
+              <div class="card-date date-overdue">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Jun 01 – Jun 08 · <strong style="color:#f87171">Overdue 11d</strong>
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-label">Checklist · 3/6</div>
+                <div class="progress-bar-track"><div class="progress-bar-fill fill-todo" style="width:50%"></div></div>
+              </div>
+              <div class="card-footer">
+                <div class="card-avatars">
+                  <div class="card-avatar av3">T</div>
+                </div>
+                <div class="card-meta">
+                  <div class="card-meta-item">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    4
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-body">
+              <div class="card-tags">
+                <span class="tag tag-low">Low</span>
+              </div>
+              <div class="card-title">Viết tài liệu API cho backend service</div>
+              <div class="card-date">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Jun 20 – Jun 30
+              </div>
+              <div class="card-footer">
+                <div class="card-avatars">
+                  <div class="card-avatar av1">A</div>
+                </div>
+                <div class="card-meta">
+                  <div class="card-meta-item">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    1
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button class="add-card-btn">+ Add card</button>
+        </div>
+      </div>
+
+      <!-- COL: In Progress -->
+      <div class="column">
+        <div class="col-header">
+          <div class="col-accent accent-progress"></div>
+          <span class="col-title">In Progress</span>
+          <span class="col-count">2</span>
+          <button class="col-add">+</button>
+        </div>
+        <div class="col-body">
+
+          <div class="card">
+            <img class="card-thumb" src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80" alt="design" />
+            <div class="card-body">
+              <div class="card-tags">
+                <span class="tag tag-medium">Medium</span>
+                <span class="tag tag-feature">Design</span>
+              </div>
+              <div class="card-title">Thiết kế giao diện nhân vật game</div>
+              <div class="card-date">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Jun 10 – Jun 25
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-label">Checklist · 2/4</div>
+                <div class="progress-bar-track"><div class="progress-bar-fill fill-progress" style="width:50%"></div></div>
+              </div>
+              <div class="card-footer">
+                <div class="card-avatars">
+                  <div class="card-avatar av2">L</div>
+                  <div class="card-avatar av1">A</div>
+                </div>
+                <div class="card-meta">
+                  <div class="card-meta-item">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    2
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-body">
+              <div class="card-tags">
+                <span class="tag tag-medium">Medium</span>
+              </div>
+              <div class="card-title">Tìm hiểu về vũ trụ quan sát thiên văn</div>
+              <div class="card-date">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Jun 15 – Jul 01
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-label">Checklist · 2/4</div>
+                <div class="progress-bar-track"><div class="progress-bar-fill fill-progress" style="width:50%"></div></div>
+              </div>
+              <div class="card-footer">
+                <div class="card-avatars">
+                  <div class="card-avatar av3">T</div>
+                </div>
+                <div class="card-meta">
+                  <div class="card-meta-item">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    3
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button class="add-card-btn">+ Add card</button>
+        </div>
+      </div>
+
+      <!-- COL: Review -->
+      <div class="column">
+        <div class="col-header">
+          <div class="col-accent accent-review"></div>
+          <span class="col-title">In Review</span>
+          <span class="col-count">2</span>
+          <button class="col-add">+</button>
+        </div>
+        <div class="col-body">
+
+          <div class="card">
+            <div class="card-body">
+              <div class="card-tags">
+                <span class="tag tag-high">High</span>
+                <span class="tag tag-feature">Backend</span>
+              </div>
+              <div class="card-title">Code Backend — API Authentication & JWT</div>
+              <div class="card-date">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                May 20 – May 30
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-label">Checklist · 4/5</div>
+                <div class="progress-bar-track"><div class="progress-bar-fill fill-review" style="width:80%"></div></div>
+              </div>
+              <div class="card-footer">
+                <div class="card-avatars">
+                  <div class="card-avatar av2">L</div>
+                  <div class="card-avatar av3">T</div>
+                </div>
+                <div class="card-meta">
+                  <div class="card-meta-item">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    6
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-body">
+              <div class="card-tags">
+                <span class="tag tag-medium">Medium</span>
+              </div>
+              <div class="card-title">Review UX flow màn hình chính</div>
+              <div class="card-date">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Jun 18 – Jun 22
+              </div>
+              <div class="card-footer">
+                <div class="card-avatars">
+                  <div class="card-avatar av1">A</div>
+                </div>
+                <div class="card-meta">
+                  <div class="card-meta-item">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    1
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button class="add-card-btn">+ Add card</button>
+        </div>
+      </div>
+
+      <!-- COL: Done -->
+      <div class="column">
+        <div class="col-header">
+          <div class="col-accent accent-done"></div>
+          <span class="col-title">Done</span>
+          <span class="col-count">2</span>
+          <button class="col-add">+</button>
+        </div>
+        <div class="col-body">
+
+          <div class="card">
+            <img class="card-thumb" src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&q=80" alt="done" />
+            <div class="card-body">
+              <div class="card-tags">
+                <span class="tag tag-high">High</span>
+                <span class="tag tag-done">Completed</span>
+              </div>
+              <div class="card-title">Code chức năng đăng ký tài khoản</div>
+              <div class="card-date">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                May 20 – May 30
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-label">Checklist · 2/7</div>
+                <div class="progress-bar-track"><div class="progress-bar-fill fill-done" style="width:100%"></div></div>
+              </div>
+              <div class="card-footer">
+                <div class="card-avatars">
+                  <div class="card-avatar av1">A</div>
+                  <div class="card-avatar av2">L</div>
+                  <div class="card-avatar av3">T</div>
+                </div>
+                <div class="card-meta">
+                  <div class="card-meta-item">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    3
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="opacity:0.7;">
+            <div class="card-body">
+              <div class="card-tags">
+                <span class="tag tag-medium">Medium</span>
+                <span class="tag tag-done">Completed</span>
+              </div>
+              <div class="card-title">Setup môi trường Docker & CI/CD pipeline</div>
+              <div class="card-date">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Jun 01 – Jun 10
+              </div>
+              <div class="card-footer">
+                <div class="card-avatars">
+                  <div class="card-avatar av3">T</div>
+                </div>
+                <div class="card-meta"></div>
+              </div>
+            </div>
+          </div>
+
+          <button class="add-card-btn">+ Add card</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ===== DASHBOARD VIEW ===== -->
+<div id="view-dashboard" class="view">
+  <div class="dashboard-wrapper">
+
+    <!-- Header -->
+    <div class="dash-header">
+      <h1>Board Dashboard</h1>
+      <p>Theo dõi tiến độ, rủi ro và workload của board · Cập nhật vừa xong</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card s-total">
+        <div class="stat-label">Total Cards</div>
+        <div class="stat-value">13</div>
+        <div class="stat-sub">Tổng số thẻ trong bảng</div>
+      </div>
+      <div class="stat-card s-done">
+        <div class="stat-label">Completed</div>
+        <div class="stat-value">2</div>
+        <div class="stat-sub success">↑ 15.4% hoàn thành</div>
+      </div>
+      <div class="stat-card s-overdue">
+        <div class="stat-label">Overdue</div>
+        <div class="stat-value" style="color:#f87171">7</div>
+        <div class="stat-sub danger">Đã quá thời hạn</div>
+      </div>
+      <div class="stat-card s-soon">
+        <div class="stat-label">Due Soon</div>
+        <div class="stat-value" style="color:#fbbf24">0</div>
+        <div class="stat-sub">Sắp tới hạn (3 ngày)</div>
+      </div>
+      <div class="stat-card s-nodate">
+        <div class="stat-label">No Due Date</div>
+        <div class="stat-value">4</div>
+        <div class="stat-sub">Chưa đặt ngày hạn</div>
+      </div>
+      <div class="stat-card s-checklist">
+        <div class="stat-label">Checklist Avg</div>
+        <div class="stat-value">51<span>%</span></div>
+        <div class="stat-sub warning">Tiến độ trung bình</div>
+      </div>
+    </div>
+
+    <!-- AI Panel -->
+    <div class="ai-panel">
+      <div class="ai-icon">✦</div>
+      <div class="ai-text">
+        <h3>AI Assistant</h3>
+        <p>Phân tích rủi ro, ưu tiên và workload của board — bấm để xem ngay</p>
+      </div>
+      <button class="ai-btn">✦ Phân tích board</button>
+    </div>
+
+    <!-- Charts row -->
+    <div class="dash-grid" style="margin-bottom:16px;">
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Phân bổ theo trạng thái</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="donutChart" width="180" height="180" style="max-width:180px;max-height:180px;"></canvas>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> Need to do · 3</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div> In Progress · 2</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div> In Review · 2</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div> Done · 2</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Phân bổ theo mức độ ưu tiên</span>
+        </div>
+        <div class="chart-wrap" style="height:200px;">
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom row -->
+    <div class="dash-grid-3">
+
+      <!-- Overdue -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Overdue</span>
+          <span class="panel-badge badge-red">7 thẻ</span>
+        </div>
+        <div class="overdue-item">
+          <div class="overdue-item-left">
+            <div class="overdue-item-title">Làm Frontend đăng nhập</div>
+            <div class="overdue-item-meta">
+              <span class="tag tag-medium" style="font-size:9px;padding:1px 6px;">Medium</span>
+              To do
+            </div>
+          </div>
+          <span class="overdue-days">23d</span>
+        </div>
+        <div class="overdue-item">
+          <div class="overdue-item-left">
+            <div class="overdue-item-title">Kiểm thử phần mềm Auth</div>
+            <div class="overdue-item-meta">
+              <span class="tag tag-urgent" style="font-size:9px;padding:1px 6px;">Urgent</span>
+              To do
+            </div>
+          </div>
+          <span class="overdue-days">11d</span>
+        </div>
+        <div class="overdue-item">
+          <div class="overdue-item-left">
+            <div class="overdue-item-title">Code Backend JWT</div>
+            <div class="overdue-item-meta">
+              <span class="tag tag-high" style="font-size:9px;padding:1px 6px;">High</span>
+              Review
+            </div>
+          </div>
+          <span class="overdue-days">20d</span>
+        </div>
+        <div class="overdue-item">
+          <div class="overdue-item-left">
+            <div class="overdue-item-title">LuvU · Task mô tả</div>
+            <div class="overdue-item-meta">
+              <span class="tag tag-high" style="font-size:9px;padding:1px 6px;">High</span>
+              Test
+            </div>
+          </div>
+          <span class="overdue-days">26d</span>
+        </div>
+      </div>
+
+      <!-- Due Soon -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Due Soon</span>
+          <span class="panel-badge badge-yellow">3 ngày</span>
+        </div>
+        <div class="empty-state">
+          <div class="icon">🎉</div>
+          <p>Không có công việc<br/>sắp đến hạn</p>
+        </div>
+      </div>
+
+      <!-- Workload -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Workload</span>
+          <span class="panel-badge badge-blue">3 người</span>
+        </div>
+
+        <div class="workload-item">
+          <div class="workload-av av1">A</div>
+          <div class="workload-info">
+            <div class="workload-name">darkdarkbrh</div>
+            <div class="workload-bar">
+              <div class="workload-fill" style="width:75%; background: linear-gradient(90deg, #6366f1, #8b5cf6);"></div>
+            </div>
+          </div>
+          <span class="workload-count">6</span>
+        </div>
+
+        <div class="workload-item">
+          <div class="workload-av av2">L</div>
+          <div class="workload-info">
+            <div class="workload-name">LTB&lt;3</div>
+            <div class="workload-bar">
+              <div class="workload-fill" style="width:25%; background: linear-gradient(90deg, #ec4899, #f43f5e);"></div>
+            </div>
+          </div>
+          <span class="workload-count">2</span>
+        </div>
+
+        <div class="workload-item">
+          <div class="workload-av av3">T</div>
+          <div class="workload-info">
+            <div class="workload-name">Trang</div>
+            <div class="workload-bar">
+              <div class="workload-fill" style="width:40%; background: linear-gradient(90deg, #06b6d4, #3b82f6);"></div>
+            </div>
+          </div>
+          <span class="workload-count">3</span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // View switching
+  function switchView(view, btn) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.view-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('view-' + view).classList.add('active');
+    btn.classList.add('active');
+    if (view === 'dashboard') initCharts();
+  }
+
+  let chartsInited = false;
+  function initCharts() {
+    if (chartsInited) return;
+    chartsInited = true;
+
+    // Donut
+    const dCtx = document.getElementById('donutChart').getContext('2d');
+    new Chart(dCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Need to do', 'In Progress', 'In Review', 'Done'],
+        datasets: [{
+          data: [3, 2, 2, 2],
+          backgroundColor: ['#3b82f6', '#a855f7', '#f59e0b', '#10b981'],
+          borderColor: '#13161e',
+          borderWidth: 3,
+          hoverOffset: 6,
+        }]
+      },
+      options: {
+        cutout: '68%',
+        plugins: { legend: { display: false }, tooltip: {
+          backgroundColor: '#1f2436',
+          borderColor: 'rgba(255,255,255,0.08)',
+          borderWidth: 1,
+          titleColor: '#f1f5f9',
+          bodyColor: '#94a3b8',
+          padding: 10,
+          cornerRadius: 8,
+        }},
+        animation: { animateRotate: true, duration: 800 }
+      }
+    });
+
+    // Bar
+    const bCtx = document.getElementById('barChart').getContext('2d');
+    new Chart(bCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Low', 'Medium', 'High', 'Urgent'],
+        datasets: [{
+          label: 'Cards',
+          data: [1, 7, 4, 1],
+          backgroundColor: [
+            'rgba(16,185,129,0.7)',
+            'rgba(245,158,11,0.7)',
+            'rgba(239,68,68,0.7)',
+            'rgba(236,72,153,0.7)',
+          ],
+          borderColor: [
+            '#10b981', '#f59e0b', '#ef4444', '#ec4899'
+          ],
+          borderWidth: 1.5,
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1f2436',
+            borderColor: 'rgba(255,255,255,0.08)',
+            borderWidth: 1,
+            titleColor: '#f1f5f9',
+            bodyColor: '#94a3b8',
+            padding: 10,
+            cornerRadius: 8,
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: { color: '#94a3b8', font: { size: 11, family: 'Inter' } },
+            border: { color: 'rgba(255,255,255,0.06)' }
+          },
+          y: {
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: { color: '#94a3b8', font: { size: 11, family: 'Inter' }, stepSize: 2 },
+            border: { color: 'rgba(255,255,255,0.06)' },
+            beginAtZero: true
+          }
+        },
+        animation: { duration: 800 }
+      }
+    });
+  }
+</script>
+
+</body>
+</html>

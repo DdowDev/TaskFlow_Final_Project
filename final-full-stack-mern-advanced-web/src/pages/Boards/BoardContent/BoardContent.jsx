@@ -385,7 +385,10 @@ function BoardContent({
       onDragEnd={handleDragEnd}
     >
       <Box sx={{
-        bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#34495e' : '#1976d2'),
+        background: (theme) =>
+          theme.palette.mode === 'dark'
+            ? 'linear-gradient(145deg, #1a1e2a 0%, #1e2335 50%, #1a2040 100%)'
+            : 'linear-gradient(160deg, #1565c0 0%, #1976d2 40%, #1e88e5 100%)',
         width: '100%',
         height: (theme) => theme.trello.boardContentHeight,
         p: '10px 0'

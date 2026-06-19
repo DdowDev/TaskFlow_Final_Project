@@ -19,8 +19,12 @@ function ListCards({ cards, isDragDisabled = false }) {
           ${theme.trello.columnHeaderHeight} -
           ${theme.trello.columnFooterHeight}
         )`,
-        '&::-webkit-scrollbar-thumb': { backgroundColor: '#ced0da' },
-        '&::-webkit-scrollbar-thumb:hover': { backgroundColor: '#bfc2cf' }
+        '&::-webkit-scrollbar': { width: '5px' },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: 'rgba(255,255,255,0.18)',
+          borderRadius: '4px'
+        },
+        '&::-webkit-scrollbar-thumb:hover': { backgroundColor: 'rgba(255,255,255,0.32)' }
       }}>
         {cards?.map(card => <Card key={card._id} card={card} isDragDisabled={isDragDisabled} />)}
       </Box>

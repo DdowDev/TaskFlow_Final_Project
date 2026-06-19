@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>TaskFlow V2 — Board Background Customization</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --brand:#6366f1;
+  --brand-light:#818cf8;
+  --brand-glow:rgba(99,102,241,0.3);
+  --text-primary:#f1f5f9;
+  --text-secondary:#cbd5e1;
+  --text-muted:#94a3b8;
+  --radius-sm:6px;
+  --radius-md:10px;
+  --radius-lg:14px;
+  --radius-xl:18px;
+  /* glass column */
+  --col-glass:rgba(15,17,25,0.55);
+  --col-border:rgba(255,255,255,0.10);
+  --card-glass:rgba(20,23,35,0.80);
+  --card-border:rgba(255,255,255,0.08);
+  --card-hover-border:rgba(255,255,255,0.18);
+}
+html,body{
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  overflow:hidden;
+  background:#1a1e2a;
+}
+
+/* ── BOARD BACKGROUND ── */
+#board-bg{
+  position:fixed;inset:0;
+  background:linear-gradient(135deg,#1a1035 0%,#0f2b5b 40%,#1a3a2a 100%);
+  transition:background 0.6s ease, opacity 0.5s;
+  z-index:0;
+}
+#board-bg-img{
+  position:fixed;inset:0;
+  background-size:cover;background-position:center;
+  opacity:0;
+  transition:opacity 0.6s ease;
+  z-index:1;
+}
+#board-bg-img.active{opacity:1;}
+#board-overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.28);
+  z-index:2;
+  pointer-events:none;
+}
+
+/* ── LAYOUT ── */
+.app{position:relative;z-index:3;display:flex;flex-direction:column;height:100vh;}
+
+/* ── TOPBAR ── */
+.topbar{
+  height:50px;
+  background:rgba(10,12,20,0.7);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  display:flex;align-items:center;padding:0 18px;gap:0;
+  flex-shrink:0;
+}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;color:#fff;margin-right:28px;text-decoration:none;}
+.logo-icon{width:28px;height:28px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 0 14px rgba(99,102,241,0.4);}
+.nav-links{display:flex;gap:2px;list-style:none;flex:1;}
+.nav-links a{padding:5px 11px;border-radius:var(--radius-sm);font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;transition:all .15s;font-weight:500;}
+.nav-links a:hover{color:#fff;background:rgba(255,255,255,0.08);}
+.topbar-right{display:flex;align-items:center;gap:9px;margin-left:auto;}
+.board-pill{display:flex;align-items:center;gap:7px;padding:4px 10px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:20px;font-size:12px;color:rgba(255,255,255,0.7);}
+.board-dot{width:6px;height:6px;background:#10b981;border-radius:50%;box-shadow:0 0 6px #10b981;}
+.search-bar{display:flex;align-items:center;gap:6px;padding:5px 11px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.09);border-radius:var(--radius-sm);font-size:12px;color:rgba(255,255,255,0.4);width:170px;cursor:pointer;transition:border-color .2s;}
+.search-bar:hover{border-color:rgba(255,255,255,0.18);}
+.avatar-stack{display:flex;}
+.avatar{width:28px;height:28px;border-radius:50%;border:2px solid rgba(0,0,0,0.3);margin-left:-6px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;color:#fff;}
+.avatar:first-child{margin-left:0;}
+.av1{background:linear-gradient(135deg,#6366f1,#8b5cf6);}
+.av2{background:linear-gradient(135deg,#ec4899,#f43f5e);}
+.av3{background:linear-gradient(135deg,#06b6d4,#3b82f6);}
+.btn-invite{display:flex;align-items:center;gap:5px;padding:6px 13px;background:var(--brand);border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;color:#fff;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;}
+.btn-invite:hover{background:var(--brand-light);box-shadow:0 0 16px var(--brand-glow);}
+/* bg change button */
+.btn-bg{display:flex;align-items:center;gap:5px;padding:6px 13px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-sm);font-size:12px;font-weight:500;color:rgba(255,255,255,0.8);cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;}
+.btn-bg:hover{background:rgba(255,255,255,0.16);}
+
+/* ── SUB-TOPBAR ── */
+.sub-topbar{
+  height:42px;
+  background:rgba(10,12,20,0.55);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  display:flex;align-items:center;padding:0 18px;gap:6px;
+  flex-shrink:0;
+}
+.sub-btn{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:var(--radius-sm);font-size:12px;color:rgba(255,255,255,0.5);background:transparent;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-weight:500;transition:all .15s;}
+.sub-btn:hover{color:#fff;background:rgba(255,255,255,0.08);}
+.sub-btn.active{color:#a5b4fc;background:rgba(99,102,241,0.15);}
+.divider-v{width:1px;height:18px;background:rgba(255,255,255,0.07);margin:0 3px;}
+.view-tabs{display:flex;gap:2px;margin-left:auto;}
+.view-tab{padding:5px 12px;font-size:12px;font-weight:500;color:rgba(255,255,255,0.4);border:none;background:transparent;cursor:pointer;border-radius:var(--radius-sm);font-family:'Inter',sans-serif;transition:all .2s;}
+.view-tab:hover{color:#fff;background:rgba(255,255,255,0.08);}
+.view-tab.active{color:#a5b4fc;background:rgba(99,102,241,0.15);}
+
+/* ── BOARD AREA ── */
+.board-area{
+  flex:1;
+  display:flex;
+  overflow:hidden;
+  position:relative;
+}
+
+/* ── KANBAN BOARD ── */
+.board-scroll{
+  flex:1;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:20px;
+  display:flex;
+  align-items:flex-start;
+  gap:14px;
+}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:3px;}
+
+/* ── COLUMN ── */
+.column{
+  width:272px;
+  background:var(--col-glass);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--col-border);
+  border-radius:var(--radius-xl);
+  overflow:hidden;
+  flex-shrink:0;
+  display:flex;flex-direction:column;
+  max-height:calc(100vh - 130px);
+}
+.col-header{
+  padding:13px 14px 11px;
+  display:flex;align-items:center;gap:9px;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  flex-shrink:0;
+}
+.col-accent{width:3px;height:16px;border-radius:2px;flex-shrink:0;}
+.acc-todo    {background:#3b82f6;box-shadow:0 0 8px #3b82f6;}
+.acc-progress{background:#a855f7;box-shadow:0 0 8px #a855f7;}
+.acc-review  {background:#f59e0b;box-shadow:0 0 8px #f59e0b;}
+.acc-done    {background:#10b981;box-shadow:0 0 8px #10b981;}
+.col-title{font-size:13px;font-weight:600;color:#fff;flex:1;}
+.col-count{font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.45);}
+.col-add-btn{width:22px;height:22px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.4);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;line-height:1;}
+.col-add-btn:hover{color:#fff;background:rgba(255,255,255,0.1);}
+.col-body{padding:10px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1;}
+
+/* ── CARD ── */
+.card{
+  background:var(--card-glass);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  border:1px solid var(--card-border);
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+  cursor:pointer;
+  transition:all 0.22s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.09),transparent);}
+.card:hover{
+  border-color:var(--card-hover-border);
+  transform:translateY(-2px);
+  box-shadow:0 10px 30px rgba(0,0,0,0.4),0 0 0 1px rgba(99,102,241,0.18);
+  background:rgba(25,29,45,0.88);
+}
+.card-thumb{width:100%;height:115px;object-fit:cover;display:block;background:rgba(255,255,255,0.05);}
+.card-body{padding:11px 12px;}
+.card-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;}
+.tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:0.4px;text-transform:uppercase;}
+.t-high   {background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.25);}
+.t-medium {background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.25);}
+.t-low    {background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.25);}
+.t-urgent {background:rgba(236,72,153,0.15);color:#f472b6;border:1px solid rgba(236,72,153,0.25);}
+.t-done   {background:rgba(16,185,129,0.1);color:#34d399;border:1px solid rgba(16,185,129,0.2);}
+.t-cat    {background:rgba(99,102,241,0.12);color:#a5b4fc;border:1px solid rgba(99,102,241,0.22);}
+.card-title{font-size:13px;font-weight:600;color:#f1f5f9;line-height:1.45;margin-bottom:9px;}
+.card-date{display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,0.38);margin-bottom:9px;}
+.card-date.overdue{color:#f87171;}
+.prog-label{font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:4px;}
+.prog-track{height:3px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden;margin-bottom:9px;}
+.prog-fill{height:100%;border-radius:2px;}
+.pf-blue{background:#3b82f6;}
+.pf-purple{background:linear-gradient(90deg,#6366f1,#a855f7);}
+.pf-yellow{background:#f59e0b;}
+.pf-green{background:#10b981;}
+.card-footer{display:flex;align-items:center;justify-content:space-between;}
+.card-avs{display:flex;}
+.cav{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(0,0,0,0.4);margin-left:-5px;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;color:#fff;}
+.cav:first-child{margin-left:0;}
+.card-meta{display:flex;align-items:center;gap:9px;}
+.meta-item{display:flex;align-items:center;gap:4px;font-size:11px;color:rgba(255,255,255,0.3);}
+
+.add-card-btn{width:100%;padding:9px;border:1.5px dashed rgba(255,255,255,0.1);border-radius:var(--radius-md);background:transparent;color:rgba(255,255,255,0.3);font-size:12px;font-weight:500;font-family:'Inter',sans-serif;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.add-card-btn:hover{border-color:rgba(99,102,241,0.5);color:#a5b4fc;background:rgba(99,102,241,0.07);}
+
+/* ghost column */
+.ghost-col{
+  width:272px;flex-shrink:0;
+  background:rgba(255,255,255,0.04);
+  backdrop-filter:blur(8px);
+  border:1.5px dashed rgba(255,255,255,0.1);
+  border-radius:var(--radius-xl);
+  height:56px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:all .2s;
+  color:rgba(255,255,255,0.35);
+  font-size:13px;font-weight:500;
+  gap:8px;
+}
+.ghost-col:hover{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);}
+
+/* ── BG PANEL ── */
+.bg-panel{
+  width:320px;
+  flex-shrink:0;
+  background:rgba(10,12,22,0.75);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  border-left:1px solid rgba(255,255,255,0.07);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  transition:width 0.3s ease,opacity 0.3s;
+}
+.bg-panel.hidden{width:0;opacity:0;pointer-events:none;}
+
+.panel-topbar{
+  padding:16px 18px 12px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  flex-shrink:0;
+}
+.panel-topbar h2{font-size:14px;font-weight:600;color:#fff;}
+.close-btn{width:26px;height:26px;border-radius:6px;border:none;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.5);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.close-btn:hover{background:rgba(255,255,255,0.12);color:#fff;}
+
+.panel-body{padding:16px;overflow-y:auto;flex:1;}
+
+.section-label{font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;margin-top:16px;}
+.section-label:first-child{margin-top:0;}
+
+/* Gradient presets */
+.gradient-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:4px;}
+.grad-swatch{
+  height:60px;border-radius:10px;cursor:pointer;
+  border:2px solid transparent;
+  transition:all .2s;
+  position:relative;overflow:hidden;
+}
+.grad-swatch:hover{transform:scale(1.04);box-shadow:0 4px 14px rgba(0,0,0,0.4);}
+.grad-swatch.active{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,0.2);}
+.grad-swatch .check{
+  position:absolute;bottom:5px;right:6px;
+  width:18px;height:18px;border-radius:50%;
+  background:#fff;color:#111;
+  font-size:10px;font-weight:700;
+  display:none;align-items:center;justify-content:center;
+}
+.grad-swatch.active .check{display:flex;}
+
+.g1{background:linear-gradient(135deg,#1a1035,#0f2b5b,#1a3a2a);}
+.g2{background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);}
+.g3{background:linear-gradient(135deg,#1a0533,#4a0080,#ff0080);}
+.g4{background:linear-gradient(135deg,#0d1b2a,#1b4f72,#117a65);}
+.g5{background:linear-gradient(135deg,#2c1654,#6a0572,#e91e8c);}
+.g6{background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);}
+.g7{background:linear-gradient(135deg,#1a0a00,#8b2500,#ff6600);}
+.g8{background:linear-gradient(135deg,#001122,#003366,#0066cc);}
+.g9{background:linear-gradient(135deg,#0d0d0d,#1a1a2e,#16213e);}
+
+/* Preset images */
+.img-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.img-swatch{
+  height:72px;border-radius:10px;cursor:pointer;
+  border:2px solid transparent;
+  transition:all .2s;
+  background-size:cover;background-position:center;
+  position:relative;overflow:hidden;
+}
+.img-swatch:hover{transform:scale(1.03);box-shadow:0 4px 14px rgba(0,0,0,0.5);}
+.img-swatch.active{border-color:#fff;}
+.img-swatch .check{position:absolute;bottom:4px;right:5px;width:18px;height:18px;border-radius:50%;background:#fff;color:#111;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;}
+.img-swatch.active .check{display:flex;}
+
+/* Upload zone */
+.upload-zone{
+  border:1.5px dashed rgba(255,255,255,0.15);
+  border-radius:10px;
+  padding:20px;
+  text-align:center;
+  cursor:pointer;
+  transition:all .2s;
+  background:rgba(255,255,255,0.03);
+  margin-top:8px;
+}
+.upload-zone:hover{border-color:rgba(99,102,241,0.5);background:rgba(99,102,241,0.06);}
+.upload-zone .upload-icon{font-size:24px;margin-bottom:8px;opacity:0.6;}
+.upload-zone p{font-size:12px;color:rgba(255,255,255,0.4);line-height:1.5;}
+.upload-zone p strong{color:rgba(99,102,241,0.9);}
+#file-input{display:none;}
+
+/* Dim slider */
+.slider-wrap{margin-top:8px;}
+.slider-label{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px;}
+input[type=range]{
+  width:100%;height:4px;
+  background:rgba(255,255,255,0.1);
+  border-radius:2px;outline:none;border:none;
+  cursor:pointer;appearance:none;-webkit-appearance:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  appearance:none;width:14px;height:14px;
+  background:#fff;border-radius:50%;cursor:pointer;
+  box-shadow:0 0 6px rgba(0,0,0,0.4);
+}
+
+/* Reset btn */
+.reset-btn{
+  width:100%;margin-top:12px;padding:9px;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:var(--radius-md);
+  color:rgba(255,255,255,0.5);
+  font-size:12px;font-weight:500;
+  cursor:pointer;font-family:'Inter',sans-serif;
+  transition:all .2s;
+}
+.reset-btn:hover{background:rgba(255,255,255,0.1);color:#fff;}
+
+/* ── BOTTOM NAV (Trello-style) ── */
+.bottom-nav{
+  position:fixed;bottom:20px;left:50%;
+  transform:translateX(-50%);
+  background:rgba(15,18,28,0.82);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,0.09);
+  border-radius:30px;
+  padding:6px 8px;
+  display:flex;align-items:center;gap:3px;
+  z-index:200;
+  box-shadow:0 8px 32px rgba(0,0,0,0.4);
+}
+.bot-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:7px 14px;border-radius:22px;
+  font-size:12px;font-weight:500;
+  color:rgba(255,255,255,0.5);
+  background:transparent;border:none;
+  cursor:pointer;font-family:'Inter',sans-serif;
+  transition:all .2s;
+  white-space:nowrap;
+}
+.bot-btn:hover{color:#fff;background:rgba(255,255,255,0.08);}
+.bot-btn.active{color:#a5b4fc;background:rgba(99,102,241,0.18);}
+.bot-divider{width:1px;height:20px;background:rgba(255,255,255,0.08);margin:0 2px;}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.card{animation:fadeUp .3s ease both;}
+.column{animation:fadeUp .35s ease both;}
+.column:nth-child(1){animation-delay:.05s;}
+.column:nth-child(2){animation-delay:.1s;}
+.column:nth-child(3){animation-delay:.15s;}
+.column:nth-child(4){animation-delay:.2s;}
+.card:nth-child(1){animation-delay:.08s;}
+.card:nth-child(2){animation-delay:.14s;}
+.card:nth-child(3){animation-delay:.2s;}
+</style>
+</head>
+<body>
+
+<!-- Board background layers -->
+<div id="board-bg"></div>
+<div id="board-bg-img"></div>
+<div id="board-overlay"></div>
+
+<div class="app">
+  <!-- TOPBAR -->
+  <nav class="topbar">
+    <a class="logo" href="#">
+      <div class="logo-icon">⚡</div>TaskFlow
+    </a>
+    <ul class="nav-links">
+      <li><a href="#">Workspaces</a></li>
+      <li><a href="#">Recent</a></li>
+      <li><a href="#">Starred</a></li>
+      <li><a href="#">Templates</a></li>
+      <li><a href="#">+ Create</a></li>
+    </ul>
+    <div class="topbar-right">
+      <div class="board-pill"><div class="board-dot"></div>Dev Game 3A</div>
+      <div class="search-bar">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Type to search...
+      </div>
+      <div class="avatar-stack">
+        <div class="avatar av1">A</div>
+        <div class="avatar av2">L</div>
+        <div class="avatar av3">T</div>
+      </div>
+      <button class="btn-bg" onclick="togglePanel()">🎨 Đổi nền</button>
+      <button class="btn-invite">+ Invite</button>
+    </div>
+  </nav>
+
+  <!-- SUB-TOPBAR -->
+  <div class="sub-topbar">
+    <button class="sub-btn">🗂 Board info</button>
+    <button class="sub-btn">🌐 Public</button>
+    <div class="divider-v"></div>
+    <button class="sub-btn">⚡ Automation</button>
+    <button class="sub-btn active">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>
+      Filters
+    </button>
+    <div class="view-tabs">
+      <button class="view-tab active">⊞ Kanban</button>
+      <button class="view-tab">📊 Dashboard</button>
+    </div>
+  </div>
+
+  <!-- BOARD AREA -->
+  <div class="board-area">
+
+    <!-- KANBAN BOARD -->
+    <div class="board-scroll">
+
+      <!-- COL: Need to do -->
+      <div class="column">
+        <div class="col-header">
+          <div class="col-accent acc-todo"></div>
+          <span class="col-title">Need to do</span>
+          <span class="col-count">3</span>
+          <button class="col-add-btn">+</button>
+        </div>
+        <div class="col-body">
+          <div class="card">
+            <img class="card-thumb" src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&q=80" alt="code"/>
+            <div class="card-body">
+              <div class="card-tags"><span class="tag t-medium">Medium</span><span class="tag t-cat">Frontend</span></div>
+              <div class="card-title">Làm Frontend cho màn hình đăng nhập</div>
+              <div class="card-date overdue">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                May 21 – May 30 &nbsp;·&nbsp; <strong>Overdue 20d</strong>
+              </div>
+              <div class="prog-label">Checklist · 1/3</div>
+              <div class="prog-track"><div class="prog-fill pf-blue" style="width:33%"></div></div>
+              <div class="card-footer">
+                <div class="card-avs"><div class="cav av1">A</div><div class="cav av2">L</div></div>
+                <div class="card-meta"><div class="meta-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>2</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <div class="card-tags"><span class="tag t-urgent">Urgent</span></div>
+              <div class="card-title">Kiểm thử phần mềm — Module Auth</div>
+              <div class="card-date overdue">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Jun 01 – Jun 08 &nbsp;·&nbsp; <strong>Overdue 11d</strong>
+              </div>
+              <div class="prog-label">Checklist · 3/6</div>
+              <div class="prog-track"><div class="prog-fill pf-blue" style="width:50%"></div></div>
+              <div class="card-footer">
+                <div class="card-avs"><div class="cav av3">T</div></div>
+                <div class="card-meta"><div class="meta-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>4</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <div class="card-tags"><span class="tag t-low">Low</span></div>
+              <div class="card-title">Viết tài liệu API cho backend service</div>
+              <div class="card-date">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Jun 20 – Jun 30
+              </div>
+              <div class="card-footer">
+                <div class="card-avs"><div class="cav av1">A</div></div>
+                <div class="card-meta"></div>
+              </div>
+            </div>
+          </div>
+          <button class="add-card-btn">+ Add card</button>
+        </div>
+      </div>
+
+      <!-- COL: In Progress -->
+      <div class="column">
+        <div class="col-header">
+          <div class="col-accent acc-progress"></div>
+          <span class="col-title">In Progress</span>
+          <span class="col-count">2</span>
+          <button class="col-add-btn">+</button>
+        </div>
+        <div class="col-body">
+          <div class="card">
+            <img class="card-thumb" src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80" alt="mt"/>
+            <div class="card-body">
+              <div class="card-tags"><span class="tag t-medium">Medium</span><span class="tag t-cat">Design</span></div>
+              <div class="card-title">Thiết kế giao diện nhân vật game</div>
+              <div class="card-date">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Jun 10 – Jun 25
+              </div>
+              <div class="prog-label">Checklist · 2/4</div>
+              <div class="prog-track"><div class="prog-fill pf-purple" style="width:50%"></div></div>
+              <div class="card-footer">
+                <div class="card-avs"><div class="cav av2">L</div><div class="cav av1">A</div></div>
+                <div class="card-meta"><div class="meta-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>2</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <div class="card-tags"><span class="tag t-medium">Medium</span></div>
+              <div class="card-title">Tìm hiểu về vũ trụ quan sát thiên văn học</div>
+              <div class="card-date">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Jun 15 – Jul 01
+              </div>
+              <div class="prog-label">Checklist · 2/4</div>
+              <div class="prog-track"><div class="prog-fill pf-purple" style="width:50%"></div></div>
+              <div class="card-footer">
+                <div class="card-avs"><div class="cav av3">T</div></div>
+                <div class="card-meta"><div class="meta-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>3</div></div>
+              </div>
+            </div>
+          </div>
+          <button class="add-card-btn">+ Add card</button>
+        </div>
+      </div>
+
+      <!-- COL: In Review -->
+      <div class="column">
+        <div class="col-header">
+          <div class="col-accent acc-review"></div>
+          <span class="col-title">In Review</span>
+          <span class="col-count">2</span>
+          <button class="col-add-btn">+</button>
+        </div>
+        <div class="col-body">
+          <div class="card">
+            <div class="card-body">
+              <div class="card-tags"><span class="tag t-high">High</span><span class="tag t-cat">Backend</span></div>
+              <div class="card-title">Code Backend — API Authentication & JWT</div>
+              <div class="card-date">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                May 20 – May 30
+              </div>
+              <div class="prog-label">Checklist · 4/5</div>
+              <div class="prog-track"><div class="prog-fill pf-yellow" style="width:80%"></div></div>
+              <div class="card-footer">
+                <div class="card-avs"><div class="cav av2">L</div><div class="cav av3">T</div></div>
+                <div class="card-meta"><div class="meta-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>6</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <div class="card-tags"><span class="tag t-medium">Medium</span></div>
+              <div class="card-title">Review UX flow màn hình chính</div>
+              <div class="card-date">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Jun 18 – Jun 22
+              </div>
+              <div class="card-footer">
+                <div class="card-avs"><div class="cav av1">A</div></div>
+                <div class="card-meta"></div>
+              </div>
+            </div>
+          </div>
+          <button class="add-card-btn">+ Add card</button>
+        </div>
+      </div>
+
+      <!-- COL: Done -->
+      <div class="column">
+        <div class="col-header">
+          <div class="col-accent acc-done"></div>
+          <span class="col-title">Done</span>
+          <span class="col-count">2</span>
+          <button class="col-add-btn">+</button>
+        </div>
+        <div class="col-body">
+          <div class="card">
+            <img class="card-thumb" src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&q=80" alt="done"/>
+            <div class="card-body">
+              <div class="card-tags"><span class="tag t-high">High</span><span class="tag t-done">Completed</span></div>
+              <div class="card-title">Code chức năng đăng ký tài khoản</div>
+              <div class="card-date">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                May 20 – May 30
+              </div>
+              <div class="prog-label">Checklist · 7/7</div>
+              <div class="prog-track"><div class="prog-fill pf-green" style="width:100%"></div></div>
+              <div class="card-footer">
+                <div class="card-avs"><div class="cav av1">A</div><div class="cav av2">L</div><div class="cav av3">T</div></div>
+                <div class="card-meta"><div class="meta-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>3</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="opacity:.65;">
+            <div class="card-body">
+              <div class="card-tags"><span class="tag t-medium">Medium</span><span class="tag t-done">Completed</span></div>
+              <div class="card-title">Setup Docker & CI/CD pipeline</div>
+              <div class="card-date">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Jun 01 – Jun 10
+              </div>
+              <div class="card-footer">
+                <div class="card-avs"><div class="cav av3">T</div></div>
+                <div class="card-meta"></div>
+              </div>
+            </div>
+          </div>
+          <button class="add-card-btn">+ Add card</button>
+        </div>
+      </div>
+
+      <!-- Ghost: Add column -->
+      <div class="ghost-col">+ Thêm danh sách khác</div>
+    </div>
+
+    <!-- BG PANEL -->
+    <div class="bg-panel hidden" id="bg-panel">
+      <div class="panel-topbar">
+        <h2>🎨 Đổi nền board</h2>
+        <button class="close-btn" onclick="togglePanel()">✕</button>
+      </div>
+      <div class="panel-body">
+
+        <div class="section-label">Gradient</div>
+        <div class="gradient-grid">
+          <div class="grad-swatch g1 active" onclick="setGradient(this,'linear-gradient(135deg,#1a1035,#0f2b5b,#1a3a2a)')"><div class="check">✓</div></div>
+          <div class="grad-swatch g2" onclick="setGradient(this,'linear-gradient(135deg,#0f0c29,#302b63,#24243e)')"><div class="check">✓</div></div>
+          <div class="grad-swatch g3" onclick="setGradient(this,'linear-gradient(135deg,#1a0533,#4a0080,#ff0080)')"><div class="check">✓</div></div>
+          <div class="grad-swatch g4" onclick="setGradient(this,'linear-gradient(135deg,#0d1b2a,#1b4f72,#117a65)')"><div class="check">✓</div></div>
+          <div class="grad-swatch g5" onclick="setGradient(this,'linear-gradient(135deg,#2c1654,#6a0572,#e91e8c)')"><div class="check">✓</div></div>
+          <div class="grad-swatch g6" onclick="setGradient(this,'linear-gradient(135deg,#0f2027,#203a43,#2c5364)')"><div class="check">✓</div></div>
+          <div class="grad-swatch g7" onclick="setGradient(this,'linear-gradient(135deg,#1a0a00,#8b2500,#ff6600)')"><div class="check">✓</div></div>
+          <div class="grad-swatch g8" onclick="setGradient(this,'linear-gradient(135deg,#001122,#003366,#0066cc)')"><div class="check">✓</div></div>
+          <div class="grad-swatch g9" onclick="setGradient(this,'linear-gradient(135deg,#0d0d0d,#1a1a2e,#16213e)')"><div class="check">✓</div></div>
+        </div>
+
+        <div class="section-label">Ảnh có sẵn</div>
+        <div class="img-grid">
+          <div class="img-swatch" style="background-image:url('https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=400&q=80')" onclick="setImage(this,'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=1200&q=80')"><div class="check">✓</div></div>
+          <div class="img-swatch" style="background-image:url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400&q=80')" onclick="setImage(this,'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&q=80')"><div class="check">✓</div></div>
+          <div class="img-swatch" style="background-image:url('https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=400&q=80')" onclick="setImage(this,'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=1200&q=80')"><div class="check">✓</div></div>
+          <div class="img-swatch" style="background-image:url('https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=400&q=80')" onclick="setImage(this,'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=1200&q=80')"><div class="check">✓</div></div>
+          <div class="img-swatch" style="background-image:url('https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&q=80')" onclick="setImage(this,'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80')"><div class="check">✓</div></div>
+          <div class="img-swatch" style="background-image:url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=400&q=80')" onclick="setImage(this,'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1200&q=80')"><div class="check">✓</div></div>
+        </div>
+
+        <div class="section-label">Upload ảnh của bạn</div>
+        <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+          <div class="upload-icon">📁</div>
+          <p><strong>Chọn ảnh</strong> từ máy tính<br/>hoặc kéo thả vào đây<br/><span style="font-size:10px;opacity:.6;">JPG, PNG, WEBP · tối đa 10MB</span></p>
+        </div>
+        <input type="file" id="file-input" accept="image/*" onchange="handleUpload(event)"/>
+
+        <div class="section-label">Độ tối overlay</div>
+        <div class="slider-wrap">
+          <div class="slider-label"><span>Sáng hơn</span><span id="dim-val">28%</span><span>Tối hơn</span></div>
+          <input type="range" min="0" max="70" value="28" id="dim-slider" oninput="setDim(this.value)"/>
+        </div>
+
+        <button class="reset-btn" onclick="resetBg()">↺ Đặt lại mặc định</button>
+      </div>
+    </div>
+
+  </div><!-- /board-area -->
+</div><!-- /app -->
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="bot-btn">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    Hộp thư đến
+  </button>
+  <div class="bot-divider"></div>
+  <button class="bot-btn">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Lịch
+  </button>
+  <div class="bot-divider"></div>
+  <button class="bot-btn active">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    Bảng thông tin
+  </button>
+  <div class="bot-divider"></div>
+  <button class="bot-btn">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+    Chuyển bảng
+  </button>
+</nav>
+
+<script>
+let panelOpen = false;
+
+function togglePanel(){
+  panelOpen = !panelOpen;
+  document.getElementById('bg-panel').classList.toggle('hidden', !panelOpen);
+}
+
+// Gradient
+let currentType = 'gradient'; // 'gradient' | 'image'
+
+function setGradient(el, gradient){
+  // clear image
+  const imgEl = document.getElementById('board-bg-img');
+  imgEl.classList.remove('active');
+  // set gradient
+  document.getElementById('board-bg').style.background = gradient;
+  // update active states
+  document.querySelectorAll('.grad-swatch').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.img-swatch').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  currentType = 'gradient';
+}
+
+function setImage(el, url){
+  const imgEl = document.getElementById('board-bg-img');
+  imgEl.style.backgroundImage = `url('${url}')`;
+  imgEl.classList.add('active');
+  document.querySelectorAll('.grad-swatch').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.img-swatch').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+  currentType = 'image';
+}
+
+function handleUpload(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    const imgEl = document.getElementById('board-bg-img');
+    imgEl.style.backgroundImage = `url('${ev.target.result}')`;
+    imgEl.classList.add('active');
+    document.querySelectorAll('.grad-swatch').forEach(s=>s.classList.remove('active'));
+    document.querySelectorAll('.img-swatch').forEach(s=>s.classList.remove('active'));
+    currentType = 'image';
+  };
+  reader.readAsDataURL(file);
+}
+
+// Drag & drop support
+document.querySelector('.upload-zone').addEventListener('dragover', e=>{
+  e.preventDefault();
+  e.currentTarget.style.borderColor='rgba(99,102,241,0.7)';
+  e.currentTarget.style.background='rgba(99,102,241,0.1)';
+});
+document.querySelector('.upload-zone').addEventListener('dragleave', e=>{
+  e.currentTarget.style.borderColor='';
+  e.currentTarget.style.background='';
+});
+document.querySelector('.upload-zone').addEventListener('drop', e=>{
+  e.preventDefault();
+  e.currentTarget.style.borderColor='';
+  e.currentTarget.style.background='';
+  const file = e.dataTransfer.files[0];
+  if(!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    const imgEl = document.getElementById('board-bg-img');
+    imgEl.style.backgroundImage = `url('${ev.target.result}')`;
+    imgEl.classList.add('active');
+    document.querySelectorAll('.grad-swatch, .img-swatch').forEach(s=>s.classList.remove('active'));
+    currentType = 'image';
+  };
+  reader.readAsDataURL(file);
+});
+
+function setDim(val){
+  document.getElementById('dim-val').textContent = val + '%';
+  document.getElementById('board-overlay').style.background = `rgba(0,0,0,${val/100})`;
+}
+
+function resetBg(){
+  const imgEl = document.getElementById('board-bg-img');
+  imgEl.classList.remove('active');
+  document.getElementById('board-bg').style.background = 'linear-gradient(135deg,#1a1035,#0f2b5b,#1a3a2a)';
+  document.getElementById('board-overlay').style.background = 'rgba(0,0,0,0.28)';
+  document.getElementById('dim-slider').value = 28;
+  document.getElementById('dim-val').textContent = '28%';
+  document.querySelectorAll('.grad-swatch').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.img-swatch').forEach(s=>s.classList.remove('active'));
+  document.querySelector('.g1').classList.add('active');
+  currentType = 'gradient';
+}
+</script>
+</body>
+</html>
