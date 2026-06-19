@@ -3,6 +3,7 @@ import Container from '@mui/material/Container'
 import Box from '@mui/material/Box'
 import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
+import Fade from '@mui/material/Fade'
 import AppBar from '~/components/AppBar/AppBar'
 import BoardBar from './BoardBar/BoardBar'
 import BoardContent from './BoardContent/BoardContent'
@@ -34,7 +35,10 @@ const getDefaultBoardFilters = () => ({
   overdue: false,
   dueSoon: false,
   assignedToMe: false,
-  memberId: ''
+  memberId: '',
+  cardIds: [],
+  unassigned: false,
+  lowChecklist: false
 })
 
 const getIdValue = (value) => value?._id || value?.id || value
@@ -64,6 +68,15 @@ const isAssignedToUser = (card, userId) => {
   return memberIds.some(memberId => isSameId(memberId, userId))
 }
 
+const isLowChecklistCard = (card) => {
+  if (isClosedStatus(card?.status)) return false
+  const checklists = Array.isArray(card?.checklists) ? card.checklists : []
+  const items = checklists.flatMap(c => Array.isArray(c?.items) ? c.items : [])
+  if (!items.length) return false
+  const completed = items.filter(item => item?.isCompleted).length
+  return Math.round((completed / items.length) * 100) < 50
+}
+
 const getFilterActiveCount = (filters) => {
   let count = 0
   if (filters.search) count += 1
@@ -73,6 +86,9 @@ const getFilterActiveCount = (filters) => {
   if (filters.dueSoon) count += 1
   if (filters.assignedToMe) count += 1
   if (filters.memberId) count += 1
+  if (filters.cardIds?.length) count += 1
+  if (filters.unassigned) count += 1
+  if (filters.lowChecklist) count += 1
   return count
 }
 
@@ -87,6 +103,15 @@ const doesCardMatchFilters = (card, filters, currentUserId) => {
   if (filters.dueSoon && !isDueSoonCard(card)) return false
   if (filters.assignedToMe && !isAssignedToUser(card, currentUserId)) return false
   if (filters.memberId && !isAssignedToUser(card, filters.memberId)) return false
+  if (filters.cardIds?.length) {
+    const cardId = card?._id?.toString?.() || String(card?._id || '')
+    if (!filters.cardIds.includes(cardId)) return false
+  }
+  if (filters.unassigned) {
+    const memberIds = Array.isArray(card?.memberIds) ? card.memberIds : []
+    if (memberIds.length > 0) return false
+  }
+  if (filters.lowChecklist && !isLowChecklistCard(card)) return false
 
   return true
 }
@@ -105,7 +130,7 @@ function Board() {
   const currentUser = useSelector(selectCurrentUser)
   const [activeBoardView, setActiveBoardView] = useState('kanban')
   const [boardFilters, setBoardFilters] = useState(getDefaultBoardFilters)
-  const lastScrolledMemberCardRef = useRef('')
+  const lastScrolledElementRef = useRef('')
 
   const { boardId } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -150,6 +175,7 @@ function Board() {
   const clearBoardFilters = useCallback(() => {
     setBoardFilters(getDefaultBoardFilters())
     updateFilterMemberQuery('', { replace: true })
+    lastScrolledElementRef.current = ''
   }, [updateFilterMemberQuery])
 
   const clearMemberFilter = useCallback(() => {
@@ -175,7 +201,7 @@ function Board() {
   const matchedCardsCount = useMemo(() => countCardsInBoard(filteredBoard), [filteredBoard])
 
   const firstMatchedCardId = useMemo(() => {
-    if (!boardFilters.memberId) return null
+    if (!isFilterActive) return null
 
     for (const column of filteredBoard?.columns || []) {
       const matchedCard = (column.cards || []).find(card => !card?.FE_PlaceholderCard && card?._id)
@@ -183,7 +209,7 @@ function Board() {
     }
 
     return null
-  }, [boardFilters.memberId, filteredBoard])
+  }, [isFilterActive, filteredBoard])
 
   const memberFilterUser = useMemo(() => {
     if (!boardFilters.memberId) return null
@@ -199,30 +225,29 @@ function Board() {
       ...filterPatch
     }
 
-    setBoardFilters({
-      ...nextFilters
-    })
+    lastScrolledElementRef.current = ''
+    setBoardFilters({ ...nextFilters })
     setActiveBoardView('kanban')
 
     updateFilterMemberQuery(nextFilters.memberId || '')
   }, [updateFilterMemberQuery])
 
   useEffect(() => {
-    if (activeBoardView !== 'kanban' || !boardFilters.memberId || !firstMatchedCardId) return
+    if (activeBoardView !== 'kanban' || !isFilterActive || !firstMatchedCardId) return
 
-    const scrollKey = `${boardFilters.memberId}-${firstMatchedCardId}`
-    if (lastScrolledMemberCardRef.current === scrollKey) return
+    const scrollKey = String(firstMatchedCardId)
+    if (lastScrolledElementRef.current === scrollKey) return
 
     const timeoutId = setTimeout(() => {
       const targetCard = document.getElementById(`card-${firstMatchedCardId}`)
       if (!targetCard) return
 
       targetCard.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
-      lastScrolledMemberCardRef.current = scrollKey
-    }, 250)
+      lastScrolledElementRef.current = scrollKey
+    }, 350)
 
     return () => clearTimeout(timeoutId)
-  }, [activeBoardView, boardFilters.memberId, firstMatchedCardId])
+  }, [activeBoardView, isFilterActive, firstMatchedCardId])
 
   /**
    * Func này có nhiệm vụ gọi API và xử lý khi kéo thả Column xong xuôi
@@ -341,11 +366,17 @@ function Board() {
           action={filterAlertActions}
           sx={{ borderRadius: 0 }}
         >
-          {boardFilters.memberId
-            ? `Đang lọc công việc của ${memberFilterName || 'thành viên đã chọn'}. `
-            : ''
+          {boardFilters.cardIds?.length > 0
+            ? `AI Filter: ${boardFilters.cardIds.length} thẻ được lọc từ phân tích AI. `
+            : boardFilters.memberId
+              ? `Đang lọc công việc của ${memberFilterName || 'thành viên đã chọn'}. `
+              : boardFilters.unassigned
+                ? 'Đang lọc các thẻ chưa được phân công. '
+                : boardFilters.lowChecklist
+                  ? 'Đang lọc các thẻ có tiến độ checklist dưới 50%. '
+                  : ''
           }
-          Drag and drop is disabled while filters are applied.
+          Kéo thả bị tắt khi đang lọc.
         </Alert>
       }
 
@@ -359,25 +390,29 @@ function Board() {
         </Alert>
       }
 
-      <Box sx={{ display: activeBoardView === 'kanban' ? 'block' : 'none' }}>
-        <BoardContent
-          board={filteredBoard}
-          canManageColumns={isBoardOwner}
-          isDragDisabled={isFilterActive}
-          // 3 cái trường hợp move dưới đây thì giữ nguyên để code xử lý kéo thả ở phần BoardContent không bị quá dài mất kiểm soát khi đọc code, maintain.
-          moveColumns={moveColumns}
-          moveCardInTheSameColumn={moveCardInTheSameColumn}
-          moveCardToDifferentColumn={moveCardToDifferentColumn}
-        />
-      </Box>
+      <Fade in={activeBoardView === 'kanban'} timeout={250}>
+        <Box sx={{ display: activeBoardView === 'kanban' ? 'block' : 'none' }}>
+          <BoardContent
+            board={filteredBoard}
+            canManageColumns={isBoardOwner}
+            isDragDisabled={isFilterActive}
+            // 3 cái trường hợp move dưới đây thì giữ nguyên để code xử lý kéo thả ở phần BoardContent không bị quá dài mất kiểm soát khi đọc code, maintain.
+            moveColumns={moveColumns}
+            moveCardInTheSameColumn={moveCardInTheSameColumn}
+            moveCardToDifferentColumn={moveCardToDifferentColumn}
+          />
+        </Box>
+      </Fade>
 
-      <Box sx={{ display: activeBoardView === 'dashboard' ? 'block' : 'none' }}>
-        <BoardDashboard
-          boardId={board._id}
-          isActive={activeBoardView === 'dashboard'}
-          onDrillDown={handleDashboardDrillDown}
-        />
-      </Box>
+      <Fade in={activeBoardView === 'dashboard'} timeout={250}>
+        <Box sx={{ display: activeBoardView === 'dashboard' ? 'block' : 'none' }}>
+          <BoardDashboard
+            boardId={board._id}
+            isActive={activeBoardView === 'dashboard'}
+            onDrillDown={handleDashboardDrillDown}
+          />
+        </Box>
+      </Fade>
     </Container>
   )
 }
