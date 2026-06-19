@@ -31,9 +31,21 @@ import { useDispatch, useSelector } from 'react-redux'
 import { cloneDeep } from 'lodash'
 import ToggleFocusInput from '~/components/Form/ToggleFocusInput'
 
-function Column({ column, canManageColumns = false, isDragDisabled = false }) {
+// ── Column accent colors (cycling by index) ────────────────────────
+const COLUMN_ACCENTS = [
+  { color: '#3b82f6', glow: 'rgba(59,130,246,0.6)',  bg: 'rgba(59,130,246,0.06)'  }, // blue
+  { color: '#a855f7', glow: 'rgba(168,85,247,0.6)',  bg: 'rgba(168,85,247,0.06)'  }, // purple
+  { color: '#f59e0b', glow: 'rgba(245,158,11,0.6)',  bg: 'rgba(245,158,11,0.06)'  }, // amber
+  { color: '#10b981', glow: 'rgba(16,185,129,0.6)',  bg: 'rgba(16,185,129,0.06)'  }, // emerald
+  { color: '#ec4899', glow: 'rgba(236,72,153,0.6)',  bg: 'rgba(236,72,153,0.06)'  }, // pink
+  { color: '#06b6d4', glow: 'rgba(6,182,212,0.6)',   bg: 'rgba(6,182,212,0.06)'   }  // cyan
+]
+
+function Column({ column, columnIndex = 0, canManageColumns = false, isDragDisabled = false }) {
   const dispatch = useDispatch()
   const board = useSelector(selectCurrentActiveBoard)
+
+  const accent = COLUMN_ACCENTS[columnIndex % COLUMN_ACCENTS.length]
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: column._id,
@@ -41,12 +53,8 @@ function Column({ column, canManageColumns = false, isDragDisabled = false }) {
     disabled: isDragDisabled
   })
   const dndKitColumnStyles = {
-    // touchAction: 'none', // Dành cho sensor default dạng PointerSensor
-    // Nếu sử dụng CSS.Transform như docs sẽ lỗi kiểu stretch
-    // https://github.com/clauderic/dnd-kit/issues/117
     transform: CSS.Translate.toString(transform),
     transition,
-    // Chiều cao phải luôn max 100% vì nếu không sẽ lỗi lúc kéo column ngắn qua một column dài. Lưu ý lúc này phải kết hợp với {...listeners} nằm ở Box chứ không phải ở div ngoài cùng để tránh trường hợp kéo vào vùng xanh.
     height: '100%',
     opacity: isDragging ? 0.5 : undefined
   }
@@ -56,12 +64,10 @@ function Column({ column, canManageColumns = false, isDragDisabled = false }) {
   const handleClick = (event) => setAnchorEl(event.currentTarget)
   const handleClose = () => setAnchorEl(null)
 
-  // Cards đã được sắp xếp ở component cha cao nhất (boards/_id.jsx)
   const orderedCards = column.cards
 
   const [openNewCardForm, setOpenNewCardForm] = useState(false)
   const toggleOpenNewCardForm = () => setOpenNewCardForm(!openNewCardForm)
-
   const [newCardTitle, setNewCardTitle] = useState('')
 
   const addNewCard = async () => {
@@ -69,45 +75,25 @@ function Column({ column, canManageColumns = false, isDragDisabled = false }) {
       toast.error('Please enter Card Title!', { position: 'bottom-right' })
       return
     }
+    const newCardData = { title: newCardTitle, columnId: column._id }
+    const createdCard = await createNewCardAPI({ ...newCardData, boardId: board._id })
 
-    // Tạo dữ liệu Card để gọi API
-    const newCardData = {
-      title: newCardTitle,
-      columnId: column._id
-    }
-
-    // Gọi API tạo mới Card và làm lại dữ liệu State Board
-    const createdCard = await createNewCardAPI({
-      ...newCardData,
-      boardId: board._id
-    })
-
-    // Cập nhật state board
-    // Phía Front-end chúng ta phải tự làm đúng lại state data board (thay vì phải gọi lại api fetchBoardDetailsAPI)
-    // Lưu ý: cách làm này phụ thuộc vào tùy lựa chọn và đặc thù dự án, có nơi thì BE sẽ hỗ trợ trả về luôn toàn bộ Board dù đây có là api tạo Column hay Card đi chăng nữa. => Lúc này FE sẽ nhàn hơn.
-
-    // Tương tự hàm createNewColumn nên chỗ này dùng cloneDeep
     const newBoard = cloneDeep(board)
     const columnToUpdate = newBoard.columns.find(column => column._id === createdCard.columnId)
     if (columnToUpdate) {
-      // Nếu column rỗng: bản chất là đang chứa một cái Placeholder card
       if (columnToUpdate.cards.some(card => card.FE_PlaceholderCard)) {
         columnToUpdate.cards = [createdCard]
         columnToUpdate.cardOrderIds = [createdCard._id]
       } else {
-        // Ngược lại Column đã có data thì push vào cuối mảng
         columnToUpdate.cards.push(createdCard)
         columnToUpdate.cardOrderIds.push(createdCard._id)
       }
     }
     dispatch(updateCurrentActiveBoard(newBoard))
-
-    // Đóng trạng thái thêm Card mới & Clear Input
     toggleOpenNewCardForm()
     setNewCardTitle('')
   }
 
-  // Xử lý xóa một Column và Cards bên trong nó
   const confirmDeleteColumn = useConfirm()
   const handleDeleteColumn = () => {
     confirmDeleteColumn({
@@ -116,15 +102,10 @@ function Column({ column, canManageColumns = false, isDragDisabled = false }) {
       confirmationText: 'Confirm',
       cancellationText: 'Cancel'
     }).then(() => {
-      // Update cho chuẩn dữ liệu state Board
-
-      // Tương tự đoạn xử lý chỗ hàm moveColumns nên không ảnh hưởng Redux Toolkit Immutability gì ở đây cả.
       const newBoard = { ...board }
       newBoard.columns = newBoard.columns.filter(c => c._id !== column._id)
       newBoard.columnOrderIds = newBoard.columnOrderIds.filter(_id => _id !== column._id)
       dispatch(updateCurrentActiveBoard(newBoard))
-
-      // Gọi API xử lý phía BE
       deleteColumnDetailsAPI(column._id).then(res => {
         toast.success(res?.deleteResult)
       })
@@ -132,192 +113,254 @@ function Column({ column, canManageColumns = false, isDragDisabled = false }) {
   }
 
   const onUpdateColumnTitle = (newTitle) => {
-    // Gọi API update Column và xử lý dữ liệu board trong redux
     updateColumnDetailsAPI(column._id, { title: newTitle }).then(() => {
       const newBoard = cloneDeep(board)
       const columnToUpdate = newBoard.columns.find(c => c._id === column._id)
       if (columnToUpdate) columnToUpdate.title = newTitle
-
       dispatch(updateCurrentActiveBoard(newBoard))
     })
   }
 
-  // Phải bọc div ở đây vì vấn đề chiều cao của column khi kéo thả sẽ có bug kiểu kiểu flickering
+  const cardCount = orderedCards?.filter(c => !c.FE_PlaceholderCard).length || 0
+
   return (
     <div ref={setNodeRef} style={dndKitColumnStyles} {...attributes}>
       <Box
         {...(canManageColumns && !isDragDisabled ? listeners : {})}
         sx={{
-          minWidth: '300px',
-          maxWidth: '300px',
-          bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#333643' : '#ebecf0'),
+          minWidth: '272px',
+          maxWidth: '272px',
           ml: 2,
-          borderRadius: '6px',
           height: 'fit-content',
-          maxHeight: (theme) => `calc(${theme.trello.boardContentHeight} - ${theme.spacing(5)})`
+          maxHeight: (theme) => `calc(${theme.trello.boardContentHeight} - ${theme.spacing(5)})`,
+          background: (theme) =>
+            theme.palette.mode === 'dark'
+              ? 'rgba(30, 34, 52, 0.88)'
+              : '#f0f2f8',
+          border: (theme) =>
+            theme.palette.mode === 'dark'
+              ? '1px solid rgba(255,255,255,0.10)'
+              : '1px solid rgba(0,0,0,0.10)',
+          borderRadius: '14px',
+          overflow: 'hidden', // needed for border-radius clipping; does NOT block ListCards internal scroll
+          boxShadow: (theme) =>
+            theme.palette.mode === 'dark'
+              ? '0 4px 24px rgba(0,0,0,0.5)'
+              : '0 2px 12px rgba(0,0,0,0.08)',
+          transition: 'box-shadow 0.2s ease'
         }}
       >
-        {/* Box Column Header */}
-        <Box sx={{
-          height: (theme) => theme.trello.columnHeaderHeight,
-          p: 2,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}>
-          <ToggleFocusInput
-            value={column?.title}
-            onChangedValue={onUpdateColumnTitle}
-            disabled={!canManageColumns}
-            data-no-dnd="true"
+        {/* ── Column Header ────────────────────────────────────────── */}
+        <Box
+          sx={{
+            height: (theme) => theme.trello.columnHeaderHeight,
+            px: 2,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.2,
+            borderBottom: (theme) =>
+              theme.palette.mode === 'dark'
+                ? '1px solid rgba(255,255,255,0.06)'
+                : '1px solid rgba(0,0,0,0.05)'
+          }}
+        >
+          {/* Accent bar */}
+          <Box
+            sx={{
+              width: '3px',
+              height: '18px',
+              borderRadius: '2px',
+              flexShrink: 0,
+              backgroundColor: accent.color,
+              boxShadow: `0 0 8px ${accent.glow}`
+            }}
           />
 
-          <Box>
-            <Tooltip title="More options">
-              <ExpandMoreIcon
-                sx={{ color: 'text.primary', cursor: 'pointer' }}
-                id="basic-column-dropdown"
-                aria-controls={open ? 'basic-menu-column-dropdown' : undefined}
-                aria-haspopup="true"
-                aria-expanded={open ? 'true' : undefined}
-                onClick={handleClick}
-              />
-            </Tooltip>
-            <Menu
-              id="basic-menu-column-dropdown"
-              anchorEl={anchorEl}
-              open={open}
-              onClose={handleClose}
-              onClick={handleClose}
-              MenuListProps={{
-                'aria-labelledby': 'basic-column-dropdown'
+          {/* Column title */}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <ToggleFocusInput
+              value={column?.title}
+              onChangedValue={onUpdateColumnTitle}
+              disabled={!canManageColumns}
+              data-no-dnd="true"
+            />
+          </Box>
+
+          {/* Card count badge */}
+          <Box
+            sx={{
+              fontSize: '11px',
+              fontWeight: 600,
+              px: '7px',
+              py: '2px',
+              borderRadius: '10px',
+              bgcolor: 'rgba(255,255,255,0.08)',
+              color: 'text.secondary',
+              flexShrink: 0
+            }}
+          >
+            {cardCount}
+          </Box>
+
+          {/* More options */}
+          <Tooltip title="More options">
+            <ExpandMoreIcon
+              sx={{
+                color: 'text.secondary',
+                cursor: 'pointer',
+                fontSize: '20px',
+                flexShrink: 0,
+                borderRadius: '4px',
+                transition: 'all 0.15s',
+                '&:hover': { color: 'text.primary', bgcolor: 'rgba(255,255,255,0.08)' }
               }}
+              id="basic-column-dropdown"
+              aria-controls={open ? 'basic-menu-column-dropdown' : undefined}
+              aria-haspopup="true"
+              aria-expanded={open ? 'true' : undefined}
+              onClick={handleClick}
+            />
+          </Tooltip>
+
+          <Menu
+            id="basic-menu-column-dropdown"
+            anchorEl={anchorEl}
+            open={open}
+            onClose={handleClose}
+            onClick={handleClose}
+            MenuListProps={{ 'aria-labelledby': 'basic-column-dropdown' }}
+            PaperProps={{
+              sx: {
+                borderRadius: '10px',
+                border: '1px solid rgba(255,255,255,0.08)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1f2436' : '#fff'
+              }
+            }}
+          >
+            <MenuItem
+              onClick={toggleOpenNewCardForm}
+              sx={{ '&:hover': { color: 'success.light', '& .add-card-icon': { color: 'success.light' } } }}
             >
+              <ListItemIcon><AddCardIcon className="add-card-icon" fontSize="small" /></ListItemIcon>
+              <ListItemText>Add new card</ListItemText>
+            </MenuItem>
+            <MenuItem>
+              <ListItemIcon><ContentCut fontSize="small" /></ListItemIcon>
+              <ListItemText>Cut</ListItemText>
+            </MenuItem>
+            <MenuItem>
+              <ListItemIcon><ContentCopy fontSize="small" /></ListItemIcon>
+              <ListItemText>Copy</ListItemText>
+            </MenuItem>
+            <MenuItem>
+              <ListItemIcon><ContentPaste fontSize="small" /></ListItemIcon>
+              <ListItemText>Paste</ListItemText>
+            </MenuItem>
+            {canManageColumns && <Divider />}
+            {canManageColumns && (
               <MenuItem
-                onClick={toggleOpenNewCardForm}
-                sx={{
-                  '&:hover': {
-                    color: 'success.light',
-                    '& .add-card-icon': { color: 'success.light' }
-                  }
-                }}
+                onClick={handleDeleteColumn}
+                sx={{ '&:hover': { color: 'warning.dark', '& .delete-forever-icon': { color: 'warning.dark' } } }}
               >
-                <ListItemIcon><AddCardIcon className="add-card-icon" fontSize="small" /></ListItemIcon>
-                <ListItemText>Add new card</ListItemText>
+                <ListItemIcon><DeleteForeverIcon className="delete-forever-icon" fontSize="small" /></ListItemIcon>
+                <ListItemText>Delete this column</ListItemText>
               </MenuItem>
+            )}
+            {canManageColumns && (
               <MenuItem>
-                <ListItemIcon><ContentCut fontSize="small" /></ListItemIcon>
-                <ListItemText>Cut</ListItemText>
+                <ListItemIcon><Cloud fontSize="small" /></ListItemIcon>
+                <ListItemText>Archive this column</ListItemText>
               </MenuItem>
-              <MenuItem>
-                <ListItemIcon><ContentCopy fontSize="small" /></ListItemIcon>
-                <ListItemText>Copy</ListItemText>
-              </MenuItem>
-              <MenuItem>
-                <ListItemIcon><ContentPaste fontSize="small" /></ListItemIcon>
-                <ListItemText>Paste</ListItemText>
-              </MenuItem>
-              {canManageColumns && <Divider />}
-              {canManageColumns &&
-                <MenuItem
-                  onClick={handleDeleteColumn}
+            )}
+          </Menu>
+        </Box>
+
+        {/* ── Cards list ───────────────────────────────────────────── */}
+        <ListCards cards={orderedCards} isDragDisabled={isDragDisabled} />
+
+        {/* ── Column Footer ────────────────────────────────────────── */}
+        <Box
+          sx={{
+            height: (theme) => theme.trello.columnFooterHeight,
+            px: 1.5,
+            py: 1
+          }}
+        >
+          {!openNewCardForm
+            ? (
+              <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Button
+                  startIcon={<AddCardIcon />}
+                  onClick={toggleOpenNewCardForm}
+                  fullWidth
                   sx={{
+                    justifyContent: 'flex-start',
+                    color: 'text.secondary',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    borderRadius: '8px',
+                    border: '1.5px dashed rgba(255,255,255,0.1)',
+                    py: 0.9,
+                    transition: 'all 0.2s',
                     '&:hover': {
-                      color: 'warning.dark',
-                      '& .delete-forever-icon': { color: 'warning.dark' }
+                      borderColor: accent.color,
+                      color: accent.color,
+                      bgcolor: accent.bg
                     }
                   }}
                 >
-                  <ListItemIcon><DeleteForeverIcon className="delete-forever-icon" fontSize="small" /></ListItemIcon>
-                  <ListItemText>Delete this column</ListItemText>
-                </MenuItem>
-              }
-              {canManageColumns &&
-                <MenuItem>
-                  <ListItemIcon><Cloud fontSize="small" /></ListItemIcon>
-                  <ListItemText>Archive this column</ListItemText>
-                </MenuItem>
-              }
-            </Menu>
-          </Box>
-        </Box>
-
-        {/* List Cards */}
-        <ListCards cards={orderedCards} isDragDisabled={isDragDisabled} />
-
-        {/* Box Column Footer */}
-        <Box sx={{
-          height: (theme) => theme.trello.columnFooterHeight,
-          p: 2
-        }}>
-          {!openNewCardForm
-            ? <Box sx={{
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
-              <Button startIcon={<AddCardIcon />} onClick={toggleOpenNewCardForm}>Add new card</Button>
-              {canManageColumns &&
-                <Tooltip title="Drag to move">
-                  <DragHandleIcon sx={{ cursor: 'pointer' }} />
-                </Tooltip>
-              }
-            </Box>
-            : <Box sx={{
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1
-            }}>
-              <TextField
-                label="Enter card title..."
-                type="text"
-                size="small"
-                variant="outlined"
-                autoFocus
-                data-no-dnd="true"
-                value={newCardTitle}
-                onChange={(e) => setNewCardTitle(e.target.value)}
-                sx={{
-                  '& label': { color: 'text.primary' },
-                  '& input': {
-                    color: (theme) => theme.palette.primary.main,
-                    bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#333643' : 'white')
-                  },
-                  '& label.Mui-focused': { color: (theme) => theme.palette.primary.main },
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': { borderColor: (theme) => theme.palette.primary.main },
-                    '&:hover fieldset': { borderColor: (theme) => theme.palette.primary.main },
-                    '&.Mui-focused fieldset': { borderColor: (theme) => theme.palette.primary.main }
-                  },
-                  '& .MuiOutlinedInput-input': {
-                    borderRadius: 1
-                  }
-                }}
-              />
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Button
-                  className="interceptor-loading"
-                  onClick={addNewCard}
-                  variant="contained" color="success" size="small"
-                  sx={{
-                    boxShadow: 'none',
-                    border: '0.5px solid',
-                    borderColor: (theme) => theme.palette.success.main,
-                    '&:hover': { bgcolor: (theme) => theme.palette.success.main }
-                  }}
-                >Add</Button>
-                <CloseIcon
-                  fontSize="small"
-                  sx={{
-                    color: (theme) => theme.palette.warning.light,
-                    cursor: 'pointer'
-                  }}
-                  onClick={toggleOpenNewCardForm}
-                />
+                  Add new card
+                </Button>
+                {canManageColumns && (
+                  <Tooltip title="Drag to move">
+                    <DragHandleIcon sx={{ cursor: 'pointer', color: 'text.secondary', ml: 1, flexShrink: 0 }} />
+                  </Tooltip>
+                )}
               </Box>
-            </Box>
+            )
+            : (
+              <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TextField
+                  label="Enter card title..."
+                  type="text"
+                  size="small"
+                  variant="outlined"
+                  autoFocus
+                  data-no-dnd="true"
+                  value={newCardTitle}
+                  onChange={(e) => setNewCardTitle(e.target.value)}
+                  sx={{
+                    flex: 1,
+                    '& label': { color: 'text.secondary', fontSize: '0.8rem' },
+                    '& input': { color: 'text.primary', fontSize: '0.8rem' },
+                    '& label.Mui-focused': { color: 'primary.main' },
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' },
+                      '&:hover fieldset': { borderColor: 'primary.main' },
+                      '&.Mui-focused fieldset': { borderColor: 'primary.main' }
+                    }
+                  }}
+                />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Button
+                    className="interceptor-loading"
+                    onClick={addNewCard}
+                    variant="contained"
+                    color="success"
+                    size="small"
+                    sx={{ boxShadow: 'none', minWidth: 'auto', px: 1.5 }}
+                  >
+                    Add
+                  </Button>
+                  <CloseIcon
+                    fontSize="small"
+                    sx={{ color: 'text.secondary', cursor: 'pointer', '&:hover': { color: 'warning.light' } }}
+                    onClick={toggleOpenNewCardForm}
+                  />
+                </Box>
+              </Box>
+            )
           }
         </Box>
       </Box>

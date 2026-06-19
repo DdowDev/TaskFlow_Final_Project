@@ -83,12 +83,24 @@ function ListColumns({ columns, canManageColumns = false, isDragDisabled = false
         display: 'flex',
         overflowX: 'auto',
         overflowY: 'hidden',
-        '&::-webkit-scrollbar-track': { m: 2 }
+        // Scrollbar — white works on both blue (light) and dark boards
+        '&::-webkit-scrollbar': { height: '8px' },
+        '&::-webkit-scrollbar-track': {
+          m: '0 8px',
+          borderRadius: '4px',
+          bgcolor: 'rgba(255,255,255,0.1)'
+        },
+        '&::-webkit-scrollbar-thumb': {
+          bgcolor: 'rgba(255,255,255,0.4)',
+          borderRadius: '4px',
+          '&:hover': { bgcolor: 'rgba(255,255,255,0.65)' }
+        }
       }}>
-        {columns?.map(column =>
+        {columns?.map((column, index) =>
           <Column
             key={column._id}
             column={column}
+            columnIndex={index}
             canManageColumns={canManageColumns}
             isDragDisabled={isDragDisabled}
           />
@@ -96,22 +108,35 @@ function ListColumns({ columns, canManageColumns = false, isDragDisabled = false
 
         {/* Box Add new column CTA */}
         {canManageColumns && (!openNewColumnForm
-          ? <Box onClick={toggleOpenNewColumnForm} sx={{
-            minWidth: '250px',
-            maxWidth: '250px',
-            mx: 2,
-            borderRadius: '6px',
-            height: 'fit-content',
-            bgcolor: '#ffffff3d'
-          }}>
+          ? <Box
+            onClick={toggleOpenNewColumnForm}
+            sx={{
+              minWidth: '220px',
+              maxWidth: '220px',
+              mx: 2,
+              borderRadius: '14px',
+              height: '52px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: 'rgba(255,255,255,0.09)',
+              border: '1.5px dashed rgba(255,255,255,0.28)',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              flexShrink: 0,
+              '&:hover': {
+                bgcolor: 'rgba(255,255,255,0.14)',
+                borderColor: 'rgba(255,255,255,0.45)'
+              }
+            }}
+          >
             <Button
               startIcon={<NoteAddIcon />}
               sx={{
-                color: 'white',
-                width: '100%',
-                justifyContent: 'flex-start',
-                pl: 2.5,
-                py: 1
+                color: 'rgba(255,255,255,0.75)',
+                fontSize: '13px',
+                fontWeight: 500,
+                pointerEvents: 'none'
               }}
             >
               Add new column
@@ -121,10 +146,12 @@ function ListColumns({ columns, canManageColumns = false, isDragDisabled = false
             minWidth: '250px',
             maxWidth: '250px',
             mx: 2,
-            p: 1,
-            borderRadius: '6px',
+            p: 1.5,
+            borderRadius: '14px',
             height: 'fit-content',
-            bgcolor: '#ffffff3d',
+            bgcolor: 'rgba(15,17,25,0.6)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255,255,255,0.08)',
             display: 'flex',
             flexDirection: 'column',
             gap: 1
