@@ -26,17 +26,23 @@ function KpiCard({ icon, label, value, suffix, accentColor, onClick }) {
         height: '100%',
         minHeight: 104,
         overflow: 'hidden',
-        border: '1px solid',
-        borderColor: 'divider',
+        border: (theme) =>
+          theme.palette.mode === 'dark'
+            ? '1px solid rgba(255,255,255,0.1)'
+            : '1px solid rgba(0,0,0,0.09)',
         borderRadius: 2,
-        bgcolor: 'background.paper',
+        bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1f2436' : '#ffffff',
+        boxShadow: (theme) =>
+          theme.palette.mode === 'dark'
+            ? '0 4px 12px rgba(0,0,0,0.2)'
+            : '0 2px 8px rgba(0,0,0,0.04)',
         transition: 'background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease',
         ...(isClickable && {
           cursor: 'pointer',
           '&:hover': {
-            bgcolor: alpha(theme.palette.primary.main, 0.04),
+            bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : alpha(theme.palette.primary.main, 0.04),
             borderColor: 'primary.main',
-            transform: 'translateY(-1px)'
+            transform: 'translateY(-2px)'
           }
         })
       }}

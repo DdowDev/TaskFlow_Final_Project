@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
 import Grid from '@mui/material/Grid'
 import Stack from '@mui/material/Stack'
@@ -22,17 +22,19 @@ const AI_LOADING_STEPS = [
 
 function DashboardSkeleton() {
   return (
-    <Grid container spacing={2}>
-      {[1, 2, 3, 4, 5, 6].map(item => (
-        <Grid key={item} item xs={12} sm={6} md={4} lg={2}>
-          <Skeleton variant="rounded" height={112} />
-        </Grid>
-      ))}
-      <Grid item xs={12} md={6}><Skeleton variant="rounded" height={360} /></Grid>
-      <Grid item xs={12} md={6}><Skeleton variant="rounded" height={360} /></Grid>
-      <Grid item xs={12} md={6}><Skeleton variant="rounded" height={260} /></Grid>
-      <Grid item xs={12} md={6}><Skeleton variant="rounded" height={260} /></Grid>
-    </Grid>
+    <Box sx={{ width: '100%', pt: 2 }}>
+      <Grid container spacing={2}>
+        {[1, 2, 3, 4, 5, 6].map(item => (
+          <Grid key={item} item xs={12} sm={6} md={4} lg={2}>
+            <Skeleton variant="rounded" height={112} />
+          </Grid>
+        ))}
+        <Grid item xs={12} md={6}><Skeleton variant="rounded" height={360} /></Grid>
+        <Grid item xs={12} md={6}><Skeleton variant="rounded" height={360} /></Grid>
+        <Grid item xs={12} md={6}><Skeleton variant="rounded" height={260} /></Grid>
+        <Grid item xs={12} md={6}><Skeleton variant="rounded" height={260} /></Grid>
+      </Grid>
+    </Box>
   )
 }
 
@@ -120,10 +122,14 @@ function BoardDashboard({ boardId, isActive, onDrillDown = () => {} }) {
     <Box sx={{
       height: (theme) => theme.trello.boardContentHeight,
       overflowY: 'auto',
-      bgcolor: (theme) => theme.palette.mode === 'dark' ? '#34495e' : '#f4f6f8',
-      p: { xs: 1.5, md: 2 }
+      overflowX: 'hidden',
+      background: (theme) =>
+        theme.palette.mode === 'dark'
+          ? 'linear-gradient(145deg, #1a1e2a 0%, #1e2335 50%, #1a2040 100%)'
+          : 'linear-gradient(160deg, #1565c0 0%, #1976d2 40%, #1e88e5 100%)',
+      p: { xs: 2, md: 3 }
     }}>
-      <Stack spacing={2}>
+      <Stack spacing={{ xs: 2, md: 3 }}>
         <DashboardHeader
           healthScore={aiAnalysis?.summary?.healthScore}
           healthStatus={aiAnalysis?.summary?.healthStatus}
@@ -144,39 +150,35 @@ function BoardDashboard({ boardId, isActive, onDrillDown = () => {} }) {
               <Alert severity="info">This board does not have active cards yet.</Alert>
             }
 
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <KpiRow data={dashboard} onDrillDown={onDrillDown} />
-              </Grid>
+            <Box sx={{ width: '100%', pt: 1.5 }}>
+              <KpiRow data={dashboard} onDrillDown={onDrillDown} />
+            </Box>
 
-              <Grid item xs={12}>
-                <AiAssistantPanel
-                  analysis={aiAnalysis}
-                  loading={isAiLoading}
-                  loadingMessage={aiLoadingMessage}
-                  error={aiError}
-                  expanded={aiExpanded}
-                  activeTab={activeAiTab}
-                  onAnalyze={handleAnalyzeBoardWithAI}
-                  onToggleExpanded={() => setAiExpanded(prev => !prev)}
-                  onChangeTab={setActiveAiTab}
-                  onDrillDown={onDrillDown}
-                />
-              </Grid>
+            <AiAssistantPanel
+              analysis={aiAnalysis}
+              loading={isAiLoading}
+              loadingMessage={aiLoadingMessage}
+              error={aiError}
+              expanded={aiExpanded}
+              activeTab={activeAiTab}
+              onAnalyze={handleAnalyzeBoardWithAI}
+              onToggleExpanded={() => setAiExpanded(prev => !prev)}
+              onChangeTab={setActiveAiTab}
+              onDrillDown={onDrillDown}
+            />
 
-              <Grid item xs={12}>
-                <ChartsRow data={dashboard} onDrillDown={onDrillDown} />
-              </Grid>
+            <Box sx={{ width: '100%', pt: 1.5 }}>
+              <ChartsRow data={dashboard} onDrillDown={onDrillDown} />
+            </Box>
 
-              <Grid item xs={12}>
-                <WorkSection
-                  overdueCards={dashboard.overdueCards || []}
-                  dueSoonCards={dashboard.dueSoonCards || []}
-                  memberWorkload={dashboard.memberWorkload || []}
-                  onDrillDown={onDrillDown}
-                />
-              </Grid>
-            </Grid>
+            <Box sx={{ width: '100%', pt: 1.5 }}>
+              <WorkSection
+                overdueCards={dashboard.overdueCards || []}
+                dueSoonCards={dashboard.dueSoonCards || []}
+                memberWorkload={dashboard.memberWorkload || []}
+                onDrillDown={onDrillDown}
+              />
+            </Box>
           </>
         }
       </Stack>

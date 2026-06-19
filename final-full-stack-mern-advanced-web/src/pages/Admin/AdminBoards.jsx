@@ -50,7 +50,7 @@ const buildSearchPath = ({ page, rowsPerPage, searchValue }) => {
 function TableLoadingRows({ rowsPerPage }) {
   return [...Array(rowsPerPage)].map((_, index) => (
     <TableRow key={index}>
-      {[...Array(7)].map((__, cellIndex) => (
+      {[...Array(6)].map((__, cellIndex) => (
         <TableCell key={cellIndex}>
           <Skeleton height={32} />
         </TableCell>
@@ -67,7 +67,6 @@ function BoardInfoDialog({ open, board, onClose }) {
         <Stack spacing={1.5} sx={{ mt: 1 }}>
           <Typography><strong>Title:</strong> {board?.title || '-'}</Typography>
           <Typography><strong>Description:</strong> {board?.description || '-'}</Typography>
-          <Typography><strong>Type:</strong> {board?.type || '-'}</Typography>
           <Typography><strong>Owners:</strong> {safeArrayCount(board?.ownerIds)}</Typography>
           <Typography><strong>Members:</strong> {safeArrayCount(board?.memberIds)}</Typography>
           <Typography><strong>Created:</strong> {formatDate(board?.createdAt)}</Typography>
@@ -178,7 +177,6 @@ function AdminBoards() {
               <TableHead>
                 <TableRow sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100' }}>
                   <TableCell sx={{ fontWeight: 800 }}>Title</TableCell>
-                  <TableCell sx={{ fontWeight: 800 }}>Type</TableCell>
                   <TableCell sx={{ fontWeight: 800 }}>Owners</TableCell>
                   <TableCell sx={{ fontWeight: 800 }}>Members</TableCell>
                   <TableCell sx={{ fontWeight: 800 }}>Created At</TableCell>
@@ -192,7 +190,7 @@ function AdminBoards() {
 
                 {!loading && boards.length === 0 &&
                   <TableRow>
-                    <TableCell colSpan={7}>
+                    <TableCell colSpan={6}>
                       <Box sx={{ py: 6, textAlign: 'center' }}>
                         <Typography color="text.secondary">No boards found.</Typography>
                       </Box>
@@ -203,7 +201,6 @@ function AdminBoards() {
                 {!loading && boards.map(board => (
                   <TableRow key={board?._id || board?.title} hover>
                     <TableCell sx={{ minWidth: 220 }}>{board?.title || '-'}</TableCell>
-                    <TableCell><StatusChip type="boardType" value={board?.type} /></TableCell>
                     <TableCell>{safeArrayCount(board?.ownerIds)}</TableCell>
                     <TableCell>{safeArrayCount(board?.memberIds)}</TableCell>
                     <TableCell sx={{ minWidth: 140 }}>{formatDate(board?.createdAt)}</TableCell>

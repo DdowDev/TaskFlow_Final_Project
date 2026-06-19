@@ -18,7 +18,6 @@ import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined
 import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined'
 import TaskAltOutlinedIcon from '@mui/icons-material/TaskAltOutlined'
 import WatchLaterOutlinedIcon from '@mui/icons-material/WatchLaterOutlined'
-import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined'
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
 import ExitToAppIcon from '@mui/icons-material/ExitToApp'
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
@@ -296,24 +295,6 @@ function ActiveCard() {
     />
   )
 
-  const renderComingSoonItem = (Icon, label) => (
-    <SidebarItem
-      aria-disabled="true"
-      sx={{
-        cursor: 'not-allowed',
-        opacity: 0.68,
-        '&:hover': {
-          backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#2f3542' : '#091e420f'
-        }
-      }}
-    >
-      <Icon fontSize="small" />
-      <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-        <span>{label}</span>
-        <Chip size="small" label="Coming soon" variant="outlined" sx={{ height: 20, fontSize: '0.68rem' }} />
-      </Box>
-    </SidebarItem>
-  )
 
   return (
     <Modal
@@ -524,8 +505,7 @@ function ActiveCard() {
                     />
                   </Box>
                 </SidebarItem>
-                {renderComingSoonItem(LocalOfferOutlinedIcon, 'Labels')}
-                {renderComingSoonItem(AttachFileOutlinedIcon, 'Attachment')}
+
               </Stack>
 
               <Divider sx={{ my: 2 }} />

@@ -8,38 +8,12 @@ import Profiles from './Menus/Profiles'
 import Button from '@mui/material/Button'
 import Tooltip from '@mui/material/Tooltip'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
-import LibraryAddIcon from '@mui/icons-material/LibraryAdd'
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 import { Link } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { selectCurrentUser } from '~/redux/user/userSlice'
 import Notifications from './Notifications/Notifications'
 import AutoCompleteSearchBoard from './SearchBoards/AutoCompleteSearchBoard'
-
-function ComingSoonButton({ label, startIcon, endIcon }) {
-  return (
-    <Tooltip title="Coming soon">
-      <Box component="span">
-        <Button
-          disabled
-          sx={{
-            color: 'rgba(255,255,255,0.72)',
-            border: 'none',
-            whiteSpace: 'nowrap',
-            '&.Mui-disabled': {
-              color: 'rgba(255,255,255,0.72)'
-            }
-          }}
-          variant="outlined"
-          startIcon={startIcon}
-          endIcon={endIcon}
-        >
-          {label}
-        </Button>
-      </Box>
-    </Tooltip>
-  )
-}
 
 function AppBar() {
   const currentUser = useSelector(selectCurrentUser)
@@ -76,16 +50,8 @@ function AppBar() {
           </Box>
         </Link>
 
-        <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
-          {!isSystemAdmin &&
-            <>
-              <ComingSoonButton label="Workspaces" />
-              <ComingSoonButton label="Recent" />
-              <ComingSoonButton label="Starred" />
-              <ComingSoonButton label="Templates" />
-            </>
-          }
-          {isSystemAdmin &&
+        {isSystemAdmin && (
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
             <Button
               component={Link}
               to="/admin/dashboard"
@@ -100,12 +66,8 @@ function AppBar() {
             >
               Admin Console
             </Button>
-          }
-          {!isSystemAdmin &&
-            <ComingSoonButton label="Create" startIcon={<LibraryAddIcon />} />
-          }
-        </Box>
-
+          </Box>
+        )}
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

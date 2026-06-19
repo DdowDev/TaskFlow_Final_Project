@@ -98,10 +98,16 @@ function SectionCard({ title, count, emptyText, children }) {
       sx={{
         p: 2,
         height: '100%',
-        border: '1px solid',
-        borderColor: 'divider',
+        border: (theme) =>
+          theme.palette.mode === 'dark'
+            ? '1px solid rgba(255,255,255,0.1)'
+            : '1px solid rgba(0,0,0,0.09)',
         borderRadius: 2.5,
-        bgcolor: 'background.paper'
+        bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1f2436' : '#ffffff',
+        boxShadow: (theme) =>
+          theme.palette.mode === 'dark'
+            ? '0 4px 20px rgba(0,0,0,0.3)'
+            : '0 2px 12px rgba(0,0,0,0.06)'
       }}
     >
       <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1} sx={{ mb: 1.5 }}>
@@ -176,12 +182,21 @@ function CardListItem({ card, onClick }) {
       <Box
         sx={{
           width: '100%',
-          px: 1.25,
-          py: 1,
+          px: 1.5,
+          py: 1.25,
           borderRadius: 1.5,
-          transition: 'background-color 0.15s ease',
+          bgcolor: (theme) => theme.palette.mode === 'dark' ? '#13161e' : '#f8fafc',
+          border: (theme) =>
+            theme.palette.mode === 'dark'
+              ? '1px solid rgba(255,255,255,0.08)'
+              : '1px solid rgba(0,0,0,0.08)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+          transition: 'all 0.15s ease',
           '&:hover': {
-            bgcolor: alpha(theme.palette.primary.main, 0.05)
+            bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.04)',
+            borderColor: 'primary.main',
+            transform: 'translateY(-1px)',
+            boxShadow: '0 2px 6px rgba(99,102,241,0.15)'
           }
         }}
       >
@@ -245,7 +260,25 @@ function WorkloadRow({ member, maxCards, onMemberClick }) {
     </Stack>
   )
 
-  if (!canClick) return content
+  if (!canClick) {
+    return (
+      <Box
+        sx={{
+          width: '100%',
+          p: 1.25,
+          borderRadius: 1.5,
+          bgcolor: (theme) => theme.palette.mode === 'dark' ? '#13161e' : '#f8fafc',
+          border: (theme) =>
+            theme.palette.mode === 'dark'
+              ? '1px solid rgba(255,255,255,0.08)'
+              : '1px solid rgba(0,0,0,0.08)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+        }}
+      >
+        {content}
+      </Box>
+    )
+  }
 
   return (
     <ButtonBase
@@ -255,16 +288,31 @@ function WorkloadRow({ member, maxCards, onMemberClick }) {
         display: 'block',
         width: '100%',
         textAlign: 'left',
-        borderRadius: 1,
-        p: 0.75,
-        mx: -0.75,
-        cursor: 'pointer',
-        '&:hover': {
-          bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06)
-        }
+        borderRadius: 1.5
       }}
     >
-      {content}
+      <Box
+        sx={{
+          width: '100%',
+          p: 1.25,
+          borderRadius: 1.5,
+          bgcolor: (theme) => theme.palette.mode === 'dark' ? '#13161e' : '#f8fafc',
+          border: (theme) =>
+            theme.palette.mode === 'dark'
+              ? '1px solid rgba(255,255,255,0.08)'
+              : '1px solid rgba(0,0,0,0.08)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+          transition: 'all 0.15s ease',
+          '&:hover': {
+            bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.04)',
+            borderColor: 'primary.main',
+            transform: 'translateY(-1px)',
+            boxShadow: '0 2px 6px rgba(99,102,241,0.15)'
+          }
+        }}
+      >
+        {content}
+      </Box>
     </ButtonBase>
   )
 }
@@ -283,7 +331,7 @@ function WorkSection({ overdueCards, dueSoonCards, memberWorkload, onDrillDown }
           count={safeOverdueCards.length}
           emptyText="Không có công việc quá hạn."
         >
-          <Stack spacing={0.5}>
+          <Stack spacing={1}>
             {safeOverdueCards.map(card => (
               <CardListItem
                 key={card?._id || card?.title}
@@ -301,7 +349,7 @@ function WorkSection({ overdueCards, dueSoonCards, memberWorkload, onDrillDown }
           count={safeDueSoonCards.length}
           emptyText="Không có công việc sắp đến hạn."
         >
-          <Stack spacing={0.5}>
+          <Stack spacing={1}>
             {safeDueSoonCards.map(card => (
               <CardListItem
                 key={card?._id || card?.title}

@@ -60,10 +60,16 @@ function DashboardHeader({ healthScore, healthStatus, updatedAt, loading, onRefr
       elevation={0}
       sx={{
         p: { xs: 1.5, sm: 2 },
-        border: '1px solid',
-        borderColor: 'divider',
+        border: (theme) =>
+          theme.palette.mode === 'dark'
+            ? '1px solid rgba(255,255,255,0.1)'
+            : '1px solid rgba(0,0,0,0.09)',
         borderRadius: 2.5,
-        bgcolor: 'background.paper'
+        bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1f2436' : '#ffffff',
+        boxShadow: (theme) =>
+          theme.palette.mode === 'dark'
+            ? '0 4px 20px rgba(0,0,0,0.3)'
+            : '0 2px 12px rgba(0,0,0,0.06)'
       }}
     >
       <Stack

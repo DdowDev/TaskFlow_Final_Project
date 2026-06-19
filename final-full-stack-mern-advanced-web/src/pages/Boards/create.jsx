@@ -4,7 +4,7 @@ import Modal from '@mui/material/Modal'
 import Typography from '@mui/material/Typography'
 import LibraryAddIcon from '@mui/icons-material/LibraryAdd'
 import CancelIcon from '@mui/icons-material/Cancel'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import TextField from '@mui/material/TextField'
 import InputAdornment from '@mui/material/InputAdornment'
 import { FIELD_REQUIRED_MESSAGE } from '~/utils/validators'
@@ -12,9 +12,6 @@ import FieldErrorAlert from '~/components/Form/FieldErrorAlert'
 import AbcIcon from '@mui/icons-material/Abc'
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
 import Button from '@mui/material/Button'
-import Radio from '@mui/material/Radio'
-import RadioGroup from '@mui/material/RadioGroup'
-import FormControlLabel from '@mui/material/FormControlLabel'
 import { createNewBoardAPI } from '~/apis'
 
 import { styled } from '@mui/material/styles'
@@ -35,18 +32,14 @@ const SidebarItem = styled(Box)(({ theme }) => ({
   }
 }))
 
-// BOARD_TYPES tương tự bên model phía Back-end (nếu cần dùng nhiều nơi thì hãy đưa ra file constants, không thì cứ để ở đây)
-const BOARD_TYPES = {
-  PUBLIC: 'public',
-  PRIVATE: 'private'
-}
+
 
 /**
  * Bản chất của cái component SidebarCreateBoardModal này chúng ta sẽ trả về một cái SidebarItem để hiển thị ở màn Board List cho phù hợp giao diện bên đó, đồng thời nó cũng chứa thêm một cái Modal để xử lý riêng form create board nhé.
  * Note: Modal là một low-component mà bọn MUI sử dụng bên trong những thứ như Dialog, Drawer, Menu, Popover. Ở đây dĩ nhiên chúng ta có thể sử dụng Dialog cũng không thành vấn đề gì, nhưng sẽ sử dụng Modal để dễ linh hoạt tùy biến giao diện từ con số 0 cho phù hợp với mọi nhu cầu nhé.
  */
 function SidebarCreateBoardModal({ afterCreateNewBoard }) {
-  const { control, register, handleSubmit, reset, formState: { errors } } = useForm()
+  const { register, handleSubmit, reset, formState: { errors } } = useForm()
 
   const [isOpen, setIsOpen] = useState(false)
   const handleOpenModal = () => setIsOpen(true)
@@ -58,7 +51,7 @@ function SidebarCreateBoardModal({ afterCreateNewBoard }) {
 
 
   const submitCreateNewBoard = (data) => {
-    createNewBoardAPI(data).then(() => {
+    createNewBoardAPI({ ...data, type: 'private' }).then(() => {
       // Bước 01: Đóng Modal
       handleCloseModal()
       // Bước 02: Thông báo đến component cha để xử lý
@@ -159,37 +152,6 @@ function SidebarCreateBoardModal({ afterCreateNewBoard }) {
                   <FieldErrorAlert errors={errors} fieldName={'description'} />
                 </Box>
 
-                {/*
-                  * Lưu ý đối với RadioGroup của MUI thì không thể dùng register tương tự TextField được mà phải sử dụng <Controller /> và props "control" của react-hook-form như cách làm dưới đây
-                  * https://stackoverflow.com/a/73336103/8324172
-                  * https://mui.com/material-ui/react-radio-button/
-                */}
-                <Controller
-                  name="type"
-                  defaultValue={BOARD_TYPES.PUBLIC}
-                  control={control}
-                  render={({ field }) => (
-                    <RadioGroup
-                      {...field}
-                      row
-                      onChange={(event, value) => field.onChange(value)}
-                      value={field.value}
-                    >
-                      <FormControlLabel
-                        value={BOARD_TYPES.PUBLIC}
-                        control={<Radio size="small" />}
-                        label="Public"
-                        labelPlacement="start"
-                      />
-                      <FormControlLabel
-                        value={BOARD_TYPES.PRIVATE}
-                        control={<Radio size="small" />}
-                        label="Private"
-                        labelPlacement="start"
-                      />
-                    </RadioGroup>
-                  )}
-                />
 
                 <Box sx={{ alignSelf: 'flex-end' }}>
                   <Button

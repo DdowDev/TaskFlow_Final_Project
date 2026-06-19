@@ -47,14 +47,17 @@ function ChartTooltip({ active, payload, label }) {
 
   return (
     <Paper
-      elevation={0}
+      elevation={3}
       sx={{
         px: 1.25,
         py: 0.75,
-        border: '1px solid',
-        borderColor: 'divider',
+        border: (theme) =>
+          theme.palette.mode === 'dark'
+            ? '1px solid rgba(255,255,255,0.15)'
+            : '1px solid rgba(0,0,0,0.09)',
         borderRadius: 1.25,
-        bgcolor: 'background.paper'
+        bgcolor: (theme) => theme.palette.mode === 'dark' ? '#13161e' : '#ffffff',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.16)'
       }}
     >
       <Typography variant="caption" color="text.secondary">{name}</Typography>
@@ -71,10 +74,16 @@ function ChartCard({ title, emptyText, isEmpty, children }) {
         p: 2,
         height: '100%',
         minHeight: 280,
-        border: '1px solid',
-        borderColor: 'divider',
+        border: (theme) =>
+          theme.palette.mode === 'dark'
+            ? '1px solid rgba(255,255,255,0.1)'
+            : '1px solid rgba(0,0,0,0.09)',
         borderRadius: 2.5,
-        bgcolor: 'background.paper'
+        bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1f2436' : '#ffffff',
+        boxShadow: (theme) =>
+          theme.palette.mode === 'dark'
+            ? '0 4px 20px rgba(0,0,0,0.3)'
+            : '0 2px 12px rgba(0,0,0,0.06)'
       }}
     >
       <Typography variant="subtitle1" sx={{ fontWeight: 900, mb: 1.5 }}>{title}</Typography>

@@ -299,7 +299,7 @@ Quan hệ chính:
 
 Điểm cần ghi cẩn thận:
 
-- `type public/private` hiện là metadata board; API board detail vẫn yêu cầu owner/member. Không nên ghi là public board ai cũng truy cập được nếu chưa có route public.
+- Hệ thống sử dụng cơ chế phân quyền Owner/Member để kiểm soát truy cập.
 - Admin console có backend update role, nhưng UI hiện chủ yếu block/unblock user và xem board/dashboard. Cần kiểm tra demo nếu muốn trình bày role edit.
 - Board Member không có quyền update board metadata hoặc remove member.
 - Column management đang được siết Board Owner.
@@ -493,7 +493,7 @@ Nên demo theo thứ tự:
 | My Work Dashboard | Chưa có | Chỉ có Board Dashboard và Admin Dashboard |
 | Notification tổng quát | Một phần | Hiện chủ yếu invitation |
 | Realtime board/card sync | Chưa thấy | Socket mới cho invitation |
-| Public board access | Chưa rõ/chưa có | `type` là metadata; detail API vẫn owner/member |
+| Public board access | Không có | Quyền truy cập hoàn toàn dựa trên cơ chế Owner/Member |
 | AI auto background analysis | Chưa có | AI chỉ chạy khi user bấm |
 | Lưu lịch sử kết quả AI | Chưa có | AI response không persist |
 
@@ -506,7 +506,7 @@ Nên demo theo thứ tự:
 - Nếu báo cáo ghi archive/restore board/card thì chuyển sang hướng phát triển.
 - Nếu báo cáo ghi AI tự động thì sửa thành **AI Assistant được gọi theo yêu cầu người dùng**.
 - Nếu báo cáo ghi AI lưu kết quả vào database thì sửa lại: **AI trả kết quả trực tiếp; không lưu DB**.
-- Nếu báo cáo ghi public board truy cập tự do thì cần kiểm tra lại; source đang yêu cầu owner/member.
+- Báo cáo không đề cập đến public board; quyền truy cập board hoàn toàn dựa trên cơ chế Owner/Member.
 - Nếu báo cáo ghi Admin có đầy đủ CRUD board/user thì cần giới hạn: admin xem dashboard/list, block/unblock user; role update backend có nhưng UI cần kiểm tra.
 
 ## 15. Gợi ý use case nên có trong báo cáo
@@ -578,7 +578,7 @@ Use case chính:
 - AI không chạy tự động nền; người dùng phải bấm phân tích/gợi ý.
 - Kết quả AI không lưu database để xem lại lịch sử.
 - Realtime mới tập trung vào invitation notification, chưa đồng bộ realtime mọi thay đổi Kanban.
-- Public/private board chưa tương đương cơ chế public access đầy đủ.
+- Hệ thống quản lý board theo mô hình Owner và Member.
 - Checklist apply AI đang gọi API tuần tự, chưa có bulk endpoint tối ưu.
 - Notification chưa phải hệ thống notification tổng quát cho mọi activity.
 
@@ -594,7 +594,7 @@ Use case chính:
 - AI tạo kế hoạch sprint hoặc phân bổ công việc cho thành viên.
 - Bulk checklist apply endpoint để giảm số request.
 - Notification tổng quát cho comment, assignment, deadline.
-- Public share link cho board public nếu cần.
+- Cơ chế chia sẻ link truy cập board (Public Share Link) nếu cần.
 - Audit/security nâng cao cho admin.
 
 ## 19. Checklist đối chiếu project và báo cáo

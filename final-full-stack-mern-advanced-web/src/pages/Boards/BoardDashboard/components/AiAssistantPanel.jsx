@@ -193,9 +193,11 @@ function AiTabItem({ chipLabel, chipColor = 'default', title, reason, actionText
       sx={{
         p: 1.25,
         borderRadius: 1.5,
-        border: '1px solid',
-        borderColor: 'divider',
-        bgcolor: 'background.paper'
+        border: (theme) =>
+          theme.palette.mode === 'dark'
+            ? '1px solid rgba(255,255,255,0.08)'
+            : '1px solid rgba(0,0,0,0.08)',
+        bgcolor: (theme) => theme.palette.mode === 'dark' ? '#13161e' : '#f8fafc'
       }}
     >
       <Stack spacing={0.75}>
@@ -488,7 +490,15 @@ function AiAssistantPanel({
       variant="outlined"
       sx={{
         borderRadius: 2.5,
-        bgcolor: 'background.paper',
+        bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1f2436' : '#ffffff',
+        border: (theme) =>
+          theme.palette.mode === 'dark'
+            ? '1px solid rgba(255,255,255,0.1)'
+            : '1px solid rgba(0,0,0,0.09)',
+        boxShadow: (theme) =>
+          theme.palette.mode === 'dark'
+            ? '0 4px 20px rgba(0,0,0,0.3)'
+            : '0 2px 12px rgba(0,0,0,0.06)',
         overflow: 'hidden'
       }}
     >

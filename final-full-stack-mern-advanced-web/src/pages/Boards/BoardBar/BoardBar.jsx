@@ -15,16 +15,10 @@ import ListItemAvatar from '@mui/material/ListItemAvatar'
 import ListItemText from '@mui/material/ListItemText'
 import Paper from '@mui/material/Paper'
 import Popover from '@mui/material/Popover'
-import Radio from '@mui/material/Radio'
-import RadioGroup from '@mui/material/RadioGroup'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import FormControlLabel from '@mui/material/FormControlLabel'
 import DashboardIcon from '@mui/icons-material/Dashboard'
-import VpnLockIcon from '@mui/icons-material/VpnLock'
-import AddToDriveIcon from '@mui/icons-material/AddToDrive'
-import BoltIcon from '@mui/icons-material/Bolt'
 import FilterListIcon from '@mui/icons-material/FilterList'
 import ViewKanbanIcon from '@mui/icons-material/ViewKanban'
 import InsightsIcon from '@mui/icons-material/Insights'
@@ -64,21 +58,7 @@ const VIEW_CHIP_STYLES = (isActive) => ({
   fontWeight: isActive ? 700 : 500
 })
 
-const COMING_SOON_CHIP_STYLES = {
-  ...MENU_STYLES,
-  opacity: 0.72,
-  '&.Mui-disabled': {
-    color: 'rgba(255,255,255,0.72)'
-  },
-  '&.Mui-disabled .MuiChip-icon': {
-    color: 'rgba(255,255,255,0.72)'
-  }
-}
 
-const BOARD_TYPES = {
-  PUBLIC: 'public',
-  PRIVATE: 'private'
-}
 
 const getUserDisplayName = (user) => user?.displayName || user?.username || user?.email || 'Unknown user'
 const getUserId = (user) => user?._id?.toString?.() || user?._id
@@ -175,7 +155,6 @@ function BoardInfoDialog({
                 {board?.title || '-'}
               </Typography>
               <Chip size="small" label={currentUserRole} color={isBoardOwner ? 'primary' : 'default'} />
-              <Chip size="small" label={capitalizeFirstLetter(board?.type || '-')} />
             </Stack>
 
             <Typography color="text.secondary" sx={{ mt: 1 }}>
@@ -253,8 +232,7 @@ function BoardInfoDialog({
 function EditBoardDialog({ open, board, isSaving, onClose, onSubmit }) {
   const [formData, setFormData] = useState({
     title: '',
-    description: '',
-    type: BOARD_TYPES.PUBLIC
+    description: ''
   })
   const [errors, setErrors] = useState({})
 
@@ -262,8 +240,7 @@ function EditBoardDialog({ open, board, isSaving, onClose, onSubmit }) {
     if (!open) return
     setFormData({
       title: board?.title || '',
-      description: board?.description || '',
-      type: board?.type || BOARD_TYPES.PUBLIC
+      description: board?.description || ''
     })
     setErrors({})
   }, [board, open])
@@ -296,8 +273,7 @@ function EditBoardDialog({ open, board, isSaving, onClose, onSubmit }) {
 
     onSubmit({
       title,
-      description,
-      type: formData.type
+      description
     })
   }
 
@@ -330,20 +306,6 @@ function EditBoardDialog({ open, board, isSaving, onClose, onSubmit }) {
               multiline
               minRows={3}
             />
-
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.75 }}>
-                Type
-              </Typography>
-              <RadioGroup
-                row
-                value={formData.type}
-                onChange={handleChangeField('type')}
-              >
-                <FormControlLabel value={BOARD_TYPES.PUBLIC} control={<Radio size="small" />} label="Public" />
-                <FormControlLabel value={BOARD_TYPES.PRIVATE} control={<Radio size="small" />} label="Private" />
-              </RadioGroup>
-            </Box>
           </Stack>
         </DialogContent>
 
@@ -355,21 +317,6 @@ function EditBoardDialog({ open, board, isSaving, onClose, onSubmit }) {
         </DialogActions>
       </Box>
     </Dialog>
-  )
-}
-
-function ComingSoonChip({ icon, label }) {
-  return (
-    <Tooltip title="Coming soon">
-      <Box component="span">
-        <Chip
-          sx={COMING_SOON_CHIP_STYLES}
-          icon={icon}
-          label={label}
-          disabled
-        />
-      </Box>
-    </Tooltip>
   )
 }
 
@@ -484,14 +431,6 @@ function BoardBar({
           clickable
           onClick={() => setIsBoardInfoOpen(true)}
         />
-        <Chip
-          sx={MENU_STYLES}
-          icon={<VpnLockIcon />}
-          label={capitalizeFirstLetter(board?.type)}
-          clickable
-        />
-        <ComingSoonChip icon={<AddToDriveIcon />} label="Add To Google Drive" />
-        <ComingSoonChip icon={<BoltIcon />} label="Automation" />
         <Badge
           color="warning"
           badgeContent={filterActiveCount}

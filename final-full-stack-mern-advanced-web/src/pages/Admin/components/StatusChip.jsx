@@ -15,10 +15,7 @@ const chipConfig = {
     true: { label: 'Blocked', color: 'error' },
     false: { label: 'Normal', color: 'success' }
   },
-  boardType: {
-    public: { label: 'Public', color: 'success' },
-    private: { label: 'Private', color: 'primary' }
-  },
+
   destroy: {
     true: { label: 'Deleted', color: 'error' },
     false: { label: 'Active', color: 'success' }
