@@ -83,17 +83,28 @@ function ListColumns({ columns, canManageColumns = false, isDragDisabled = false
         display: 'flex',
         overflowX: 'auto',
         overflowY: 'hidden',
-        // Scrollbar — white works on both blue (light) and dark boards
+        // Scrollbar — styled nicely for both light and dark boards
         '&::-webkit-scrollbar': { height: '8px' },
         '&::-webkit-scrollbar-track': {
           m: '0 8px',
           borderRadius: '4px',
-          bgcolor: 'rgba(255,255,255,0.1)'
+          bgcolor: (theme) =>
+            theme.palette.mode === 'dark'
+              ? 'rgba(255, 255, 255, 0.06)'
+              : 'rgba(0, 0, 0, 0.05)'
         },
         '&::-webkit-scrollbar-thumb': {
-          bgcolor: 'rgba(255,255,255,0.4)',
+          bgcolor: (theme) =>
+            theme.palette.mode === 'dark'
+              ? 'rgba(255, 255, 255, 0.25)'
+              : 'rgba(0, 0, 0, 0.2)',
           borderRadius: '4px',
-          '&:hover': { bgcolor: 'rgba(255,255,255,0.65)' }
+          '&:hover': {
+            bgcolor: (theme) =>
+              theme.palette.mode === 'dark'
+                ? 'rgba(255, 255, 255, 0.45)'
+                : 'rgba(0, 0, 0, 0.35)'
+          }
         }
       }}>
         {columns?.map((column, index) =>
@@ -111,29 +122,44 @@ function ListColumns({ columns, canManageColumns = false, isDragDisabled = false
           ? <Box
             onClick={toggleOpenNewColumnForm}
             sx={{
-              minWidth: '220px',
-              maxWidth: '220px',
+              minWidth: '272px',
+              maxWidth: '272px',
               mx: 2,
-              borderRadius: '14px',
-              height: '52px',
+              borderRadius: '16px',
+              height: '56px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              bgcolor: 'rgba(255,255,255,0.09)',
-              border: '1.5px dashed rgba(255,255,255,0.28)',
+              bgcolor: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? 'rgba(255, 255, 255, 0.06)'
+                  : 'rgba(0, 0, 0, 0.04)',
+              border: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? '1.5px dashed rgba(255, 255, 255, 0.2)'
+                  : '1.5px dashed rgba(0, 0, 0, 0.15)',
               cursor: 'pointer',
               transition: 'all 0.2s',
               flexShrink: 0,
               '&:hover': {
-                bgcolor: 'rgba(255,255,255,0.14)',
-                borderColor: 'rgba(255,255,255,0.45)'
+                bgcolor: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.12)'
+                    : 'rgba(0, 0, 0, 0.08)',
+                borderColor: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.45)'
+                    : 'rgba(0, 0, 0, 0.3)'
               }
             }}
           >
             <Button
               startIcon={<NoteAddIcon />}
               sx={{
-                color: 'rgba(255,255,255,0.75)',
+                color: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(255, 255, 255, 0.75)'
+                    : 'rgba(0, 0, 0, 0.6)',
                 fontSize: '13px',
                 fontWeight: 500,
                 pointerEvents: 'none'

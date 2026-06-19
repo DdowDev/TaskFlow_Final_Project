@@ -387,8 +387,8 @@ function BoardContent({
       <Box sx={{
         background: (theme) =>
           theme.palette.mode === 'dark'
-            ? 'linear-gradient(145deg, #1a1e2a 0%, #1e2335 50%, #1a2040 100%)'
-            : 'linear-gradient(160deg, #1565c0 0%, #1976d2 40%, #1e88e5 100%)',
+            ? 'linear-gradient(145deg, #0d0f14 0%, #111827 40%, #0f172a 100%)'
+            : '#e8ecf5',
         width: '100%',
         height: (theme) => theme.trello.boardContentHeight,
         p: '10px 0'

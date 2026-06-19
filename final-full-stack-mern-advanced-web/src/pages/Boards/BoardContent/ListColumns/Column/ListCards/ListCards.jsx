@@ -21,10 +21,18 @@ function ListCards({ cards, isDragDisabled = false }) {
         )`,
         '&::-webkit-scrollbar': { width: '5px' },
         '&::-webkit-scrollbar-thumb': {
-          backgroundColor: 'rgba(255,255,255,0.18)',
+          backgroundColor: (theme) =>
+            theme.palette.mode === 'dark'
+              ? 'rgba(255, 255, 255, 0.18)'
+              : 'rgba(0, 0, 0, 0.15)',
           borderRadius: '4px'
         },
-        '&::-webkit-scrollbar-thumb:hover': { backgroundColor: 'rgba(255,255,255,0.32)' }
+        '&::-webkit-scrollbar-thumb:hover': {
+          backgroundColor: (theme) =>
+            theme.palette.mode === 'dark'
+              ? 'rgba(255, 255, 255, 0.32)'
+              : 'rgba(0, 0, 0, 0.28)'
+        }
       }}>
         {cards?.map(card => <Card key={card._id} card={card} isDragDisabled={isDragDisabled} />)}
       </Box>

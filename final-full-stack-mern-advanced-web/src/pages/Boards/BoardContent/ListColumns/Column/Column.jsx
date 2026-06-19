@@ -135,18 +135,20 @@ function Column({ column, columnIndex = 0, canManageColumns = false, isDragDisab
           maxHeight: (theme) => `calc(${theme.trello.boardContentHeight} - ${theme.spacing(5)})`,
           background: (theme) =>
             theme.palette.mode === 'dark'
-              ? 'rgba(30, 34, 52, 0.88)'
-              : '#f0f2f8',
+              ? 'rgba(15, 17, 25, 0.58)'
+              : '#ffffff',
           border: (theme) =>
             theme.palette.mode === 'dark'
-              ? '1px solid rgba(255,255,255,0.10)'
-              : '1px solid rgba(0,0,0,0.10)',
-          borderRadius: '14px',
+              ? '1px solid rgba(255, 255, 255, 0.08)'
+              : '1px solid rgba(0, 0, 0, 0.08)',
+          borderRadius: '16px',
           overflow: 'hidden', // needed for border-radius clipping; does NOT block ListCards internal scroll
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
           boxShadow: (theme) =>
             theme.palette.mode === 'dark'
-              ? '0 4px 24px rgba(0,0,0,0.5)'
-              : '0 2px 12px rgba(0,0,0,0.08)',
+              ? '0 8px 32px rgba(0, 0, 0, 0.35)'
+              : '0 2px 12px rgba(0, 0, 0, 0.06)',
           transition: 'box-shadow 0.2s ease'
         }}
       >
