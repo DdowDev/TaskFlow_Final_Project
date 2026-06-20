@@ -25,14 +25,20 @@ import InsightsIcon from '@mui/icons-material/Insights'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts'
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove'
+import ArchiveIcon from '@mui/icons-material/Archive'
 import { Tooltip } from '@mui/material'
 import BoardUserGroup from './BoardUserGroup'
 import InviteBoardUser from './InviteBoardUser'
 import BoardFilterPanel from './BoardFilterPanel'
 import { useDispatch, useSelector } from 'react-redux'
 import { selectCurrentUser } from '~/redux/user/userSlice'
-import { fetchBoardDetailsAPI, updateCurrentActiveBoard, clearCurrentActiveBoard } from '~/redux/activeBoard/activeBoardSlice'
-import { removeBoardMemberAPI, updateBoardDetailsAPI } from '~/apis'
+import {
+  fetchBoardDetailsAPI,
+  updateCurrentActiveBoard,
+  clearCurrentActiveBoard,
+  updateCardInBoard
+} from '~/redux/activeBoard/activeBoardSlice'
+import { removeBoardMemberAPI, updateBoardDetailsAPI, updateCardDetailsAPI } from '~/apis'
 import { toast } from 'react-toastify'
 import { useConfirm } from 'material-ui-confirm'
 import { useNavigate } from 'react-router-dom'
@@ -327,6 +333,58 @@ function EditBoardDialog({ open, board, isSaving, onClose, onSubmit }) {
   )
 }
 
+function ArchivedCardsDialog({ open, archivedCards = [], isSaving, onClose, onRestoreCard }) {
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle sx={{ fontWeight: 900, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <ArchiveIcon color="primary" /> Archived Cards
+      </DialogTitle>
+
+      <DialogContent dividers sx={{ p: 0 }}>
+        {archivedCards.length === 0 ? (
+          <Typography color="text.secondary" align="center" sx={{ py: 6 }}>
+            Không có thẻ lưu trữ nào.
+          </Typography>
+        ) : (
+          <List sx={{ py: 0 }}>
+            {archivedCards.map((card, index) => (
+              <ListItem
+                key={card._id}
+                divider={index !== archivedCards.length - 1}
+                secondaryAction={
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="primary"
+                    onClick={() => onRestoreCard(card)}
+                    disabled={isSaving}
+                  >
+                    Restore
+                  </Button>
+                }
+                sx={{ px: 3, py: 1.5 }}
+              >
+                <ListItemText
+                  primary={card.title}
+                  secondary={card.updatedAt ? `Archived at: ${new Date(card.updatedAt).toLocaleString()}` : ''}
+                  primaryTypographyProps={{ fontWeight: 700, variant: 'body1' }}
+                  secondaryTypographyProps={{ variant: 'caption', color: 'text.secondary' }}
+                />
+              </ListItem>
+            ))}
+          </List>
+        )}
+      </DialogContent>
+
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={onClose} disabled={isSaving} variant="outlined" color="inherit">
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  )
+}
+
 function BoardBar({
   board,
   activeView = 'kanban',
@@ -349,6 +407,24 @@ function BoardBar({
   const [removingMemberId, setRemovingMemberId] = useState(null)
   const isFilterPopoverOpen = Boolean(filterAnchorEl)
   const currentUserRole = isBoardOwner ? 'Board Owner' : 'Board Member'
+
+  const [isArchivedCardsOpen, setIsArchivedCardsOpen] = useState(false)
+  const [isRestoringCard, setIsRestoringCard] = useState(false)
+
+  const handleRestoreCard = (card) => {
+    setIsRestoringCard(true)
+    updateCardDetailsAPI(card._id, { isArchived: false })
+      .then(updatedCard => {
+        toast.success('Card restored successfully!')
+        dispatch(updateCardInBoard(updatedCard))
+      })
+      .catch(error => {
+        toast.error(error?.response?.data?.message || 'Could not restore card')
+      })
+      .finally(() => {
+        setIsRestoringCard(false)
+      })
+  }
 
   const openFilterPopover = (event) => setFilterAnchorEl(event.currentTarget)
   const closeFilterPopover = () => setFilterAnchorEl(null)
@@ -467,6 +543,13 @@ function BoardBar({
           clickable
           onClick={() => setIsBoardInfoOpen(true)}
         />
+        <Chip
+          sx={MENU_STYLES}
+          icon={<ArchiveIcon />}
+          label="Archived cards"
+          clickable
+          onClick={() => setIsArchivedCardsOpen(true)}
+        />
         <Badge
           color="warning"
           badgeContent={filterActiveCount}
@@ -543,6 +626,14 @@ function BoardBar({
         isSaving={isSavingBoard}
         onClose={() => setIsBoardEditOpen(false)}
         onSubmit={handleUpdateBoardMetadata}
+      />
+
+      <ArchivedCardsDialog
+        open={isArchivedCardsOpen}
+        archivedCards={board?.archivedCards || []}
+        isSaving={isRestoringCard}
+        onClose={() => setIsArchivedCardsOpen(false)}
+        onRestoreCard={handleRestoreCard}
       />
     </Box>
   )

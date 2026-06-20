@@ -10,6 +10,12 @@ import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import LinearProgress from '@mui/material/LinearProgress'
 import Tooltip from '@mui/material/Tooltip'
+import IconButton from '@mui/material/IconButton'
+import ArchiveIcon from '@mui/icons-material/Archive'
+import { useConfirm } from 'material-ui-confirm'
+import { updateCardDetailsAPI } from '~/apis'
+import { updateCardInBoard, fetchBoardDetailsAPI } from '~/redux/activeBoard/activeBoardSlice'
+import { toast } from 'react-toastify'
 
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -168,6 +174,32 @@ function Card({ card, isDragDisabled = false }) {
     dispatch(showModalActiveCard())
   }
 
+  const confirmArchive = useConfirm()
+  const handleArchiveClick = (e) => {
+    e.stopPropagation()
+    confirmArchive({
+      title: 'Archive Card?',
+      description: 'Thẻ này sẽ bị lưu trữ và ẩn khỏi bảng. Bạn có thể khôi phục lại bất kỳ lúc nào.',
+      confirmationText: 'Archive',
+      cancellationText: 'Cancel',
+      confirmationButtonProps: { color: 'warning', variant: 'contained' }
+    }).then(() => {
+      updateCardDetailsAPI(card._id, { isArchived: true })
+        .then(updatedCard => {
+          toast.success('Card archived successfully!')
+          dispatch(updateCardInBoard(updatedCard))
+        })
+        .catch(err => {
+          if (err?.response?.status === 409) {
+            toast.error('This card is already archived.')
+            dispatch(fetchBoardDetailsAPI(card.boardId))
+          } else {
+            toast.error(err?.response?.data?.message || 'Could not archive card')
+          }
+        })
+    }).catch(() => {})
+  }
+
   return (
     <MuiCard
       id={card?._id ? `card-${card._id}` : undefined}
@@ -200,10 +232,39 @@ function Card({ card, isDragDisabled = false }) {
           boxShadow: (theme) =>
             theme.palette.mode === 'dark'
               ? '0 6px 20px rgba(0,0,0,0.4), 0 0 0 1px rgba(99,102,241,0.25)'
-              : '0 4px 16px rgba(0,0,0,0.12), 0 0 0 1px rgba(99,102,241,0.2)'
+              : '0 4px 16px rgba(0,0,0,0.12), 0 0 0 1px rgba(99,102,241,0.2)',
+          '& .archive-card-btn': {
+            opacity: 1
+          }
         }
       }}
     >
+      {!card?.FE_PlaceholderCard && (
+        <Tooltip title="Archive card">
+          <IconButton
+            size="small"
+            className="archive-card-btn"
+            onClick={handleArchiveClick}
+            sx={{
+              position: 'absolute',
+              top: card?.cover ? 8 : 4,
+              right: card?.cover ? 8 : 4,
+              zIndex: 10,
+              opacity: 0,
+              backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.9)',
+              color: 'text.secondary',
+              '&:hover': {
+                backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.1)',
+                color: 'text.primary'
+              },
+              transition: 'opacity 0.2s ease, background-color 0.2s ease, color 0.2s ease'
+            }}
+          >
+            <ArchiveIcon sx={{ fontSize: '15px' }} />
+          </IconButton>
+        </Tooltip>
+      )}
+
       {/* Cover image */}
       {card?.cover && (
         <CardMedia

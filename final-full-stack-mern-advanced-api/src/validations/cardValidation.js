@@ -32,6 +32,7 @@ const update = async (req, res, next) => {
     priority: Joi.string().valid(...Object.values(CARD_PRIORITIES)),
     startDate: Joi.date().allow(null),
     dueDate: Joi.date().allow(null),
+    isArchived: Joi.boolean().optional(),
     commentToAdd: Joi.object({
       userAvatar: Joi.string().allow(null, ''),
       userDisplayName: Joi.string().allow(null, ''),

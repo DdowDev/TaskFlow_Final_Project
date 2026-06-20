@@ -40,25 +40,54 @@ export const activeBoardSlice = createSlice({
       state.currentActiveBoard = board
     },
     updateCardInBoard: (state, action) => {
-      // Update nested data
-      // https://redux-toolkit.js.org/usage/immer-reducers#updating-nested-data
       const incomingCard = action.payload
+      if (!state.currentActiveBoard) return
 
-      // Tìm dần từ board > column > card
-      const column = state.currentActiveBoard.columns.find(i => i._id === incomingCard.columnId)
-      if (column) {
-        const card = column.cards.find(i => i._id === incomingCard._id)
-        if (card) {
-          // card.title = incomingCard.title
-          // card['title'] = incomingCard['title']
-          /**
-           * Giải thích đoạn dưới, các bạn mới lần đầu sẽ dễ bị lú :D
-           * Đơn giản là dùng Object.keys để lấy toàn bộ các properties (keys) của incomingCard về một Array rồi forEach nó ra.
-           * Sau đó tùy vào trường hợp cần thì kiểm tra thêm còn không thì cập nhật ngược lại giá trị vào card luôn như bên dưới.
-          */
-          Object.keys(incomingCard).forEach(key => {
-            card[key] = incomingCard[key]
-          })
+      if (!Array.isArray(state.currentActiveBoard.archivedCards)) {
+        state.currentActiveBoard.archivedCards = []
+      }
+
+      if (incomingCard.isArchived) {
+        const column = state.currentActiveBoard.columns.find(i => i._id === incomingCard.columnId)
+        if (column) {
+          column.cards = column.cards.filter(c => c._id !== incomingCard._id)
+          column.cardOrderIds = column.cardOrderIds.filter(id => id !== incomingCard._id)
+
+          if (column.cards.length === 0) {
+            const placeholder = generatePlaceholderCard(column)
+            column.cards = [placeholder]
+            column.cardOrderIds = [placeholder._id]
+          }
+        }
+
+        const alreadyArchived = state.currentActiveBoard.archivedCards.some(c => c._id === incomingCard._id)
+        if (!alreadyArchived) {
+          state.currentActiveBoard.archivedCards.push(incomingCard)
+        } else {
+          state.currentActiveBoard.archivedCards = state.currentActiveBoard.archivedCards.map(c =>
+            c._id === incomingCard._id ? { ...c, ...incomingCard } : c
+          )
+        }
+      } else {
+        state.currentActiveBoard.archivedCards = state.currentActiveBoard.archivedCards.filter(c => c._id !== incomingCard._id)
+
+        const column = state.currentActiveBoard.columns.find(i => i._id === incomingCard.columnId)
+        if (column) {
+          column.cards = column.cards.filter(c => !c.FE_PlaceholderCard)
+          column.cardOrderIds = column.cardOrderIds.filter(id => !id.toString().includes('placeholder'))
+
+          const existingCardIndex = column.cards.findIndex(c => c._id === incomingCard._id)
+          if (existingCardIndex !== -1) {
+            Object.keys(incomingCard).forEach(key => {
+              column.cards[existingCardIndex][key] = incomingCard[key]
+            })
+          } else {
+            column.cards.push(incomingCard)
+            if (!column.cardOrderIds.includes(incomingCard._id)) {
+              column.cardOrderIds.push(incomingCard._id)
+            }
+            column.cards = mapOrder(column.cards, column.cardOrderIds, '_id')
+          }
         }
       }
     },

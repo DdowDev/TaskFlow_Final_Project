@@ -24,6 +24,8 @@ import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import SubjectRoundedIcon from '@mui/icons-material/SubjectRounded'
 import DvrOutlinedIcon from '@mui/icons-material/DvrOutlined'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
+import ArchiveIcon from '@mui/icons-material/Archive'
+import { useConfirm } from 'material-ui-confirm'
 
 import ToggleFocusInput from '~/components/Form/ToggleFocusInput'
 import VisuallyHiddenInput from '~/components/Form/VisuallyHiddenInput'
@@ -177,6 +179,28 @@ function ActiveCard() {
   const handleCloseModal = () => {
     setIsAiChecklistDialogOpen(false)
     dispatch(clearAndHideCurrentActiveCard())
+  }
+
+  const confirmArchiveCard = useConfirm()
+  const handleArchiveCard = () => {
+    confirmArchiveCard({
+      title: 'Archive Card?',
+      description: 'Thẻ này sẽ bị lưu trữ và ẩn khỏi bảng. Bạn có thể khôi phục lại bất kỳ lúc nào.',
+      confirmationText: 'Archive',
+      cancellationText: 'Cancel',
+      confirmationButtonProps: { color: 'warning', variant: 'contained' }
+    }).then(() => {
+      toast.promise(
+        callApiUpdateCard({ isArchived: true }).then(() => {
+          handleCloseModal()
+        }),
+        {
+          pending: 'Archiving card...',
+          success: 'Card archived successfully!',
+          error: 'Could not archive card'
+        }
+      )
+    }).catch(() => {})
   }
 
   const callApiUpdateCard = async (updateData) => {
@@ -503,6 +527,13 @@ function ActiveCard() {
                       variant="outlined"
                       sx={{ height: 22, fontSize: '0.72rem', fontWeight: 700 }}
                     />
+                  </Box>
+                </SidebarItem>
+
+                <SidebarItem onClick={handleArchiveCard} sx={{ color: 'warning.light' }}>
+                  <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <ArchiveIcon fontSize="small" />
+                    <span>Archive card</span>
                   </Box>
                 </SidebarItem>
 

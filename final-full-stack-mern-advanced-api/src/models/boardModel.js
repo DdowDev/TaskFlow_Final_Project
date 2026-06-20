@@ -90,9 +90,27 @@ const getDetails = async (userId, boardId) => {
       } },
       { $lookup: {
         from: cardModel.CARD_COLLECTION_NAME,
-        localField: '_id',
-        foreignField: 'boardId',
+        let: { board_id: '$_id' },
+        pipeline: [
+          { $match: {
+            $expr: { $eq: ['$boardId', '$$board_id'] },
+            _destroy: false,
+            isArchived: { $ne: true }
+          } }
+        ],
         as: 'cards'
+      } },
+      { $lookup: {
+        from: cardModel.CARD_COLLECTION_NAME,
+        let: { board_id: '$_id' },
+        pipeline: [
+          { $match: {
+            $expr: { $eq: ['$boardId', '$$board_id'] },
+            _destroy: false,
+            isArchived: true
+          } }
+        ],
+        as: 'archivedCards'
       } },
       { $lookup: {
         from: userModel.USER_COLLECTION_NAME,

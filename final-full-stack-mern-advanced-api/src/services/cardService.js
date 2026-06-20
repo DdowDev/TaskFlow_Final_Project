@@ -434,6 +434,13 @@ const buildFieldActivityEvents = (targetCard, updateData) => {
     }
   }
 
+  if (hasOwn(updateData, 'isArchived') && targetCard.isArchived !== updateData.isArchived) {
+    events.push({
+      action: updateData.isArchived ? CARD_ACTIVITY_ACTIONS.CARD_ARCHIVED : CARD_ACTIVITY_ACTIONS.CARD_UNARCHIVED,
+      metadata: { cardTitle: targetCard.title }
+    })
+  }
+
   return events
 }
 
@@ -557,7 +564,25 @@ const update = async (cardId, reqBody, cardCoverFile, userInfo) => {
         validateMergedDateRange(targetCard, updateData)
         applyStatusSideEffects(targetCard, updateData, activityAt)
 
+        if (Object.prototype.hasOwnProperty.call(updateData, 'isArchived')) {
+          if (updateData.isArchived === true && targetCard.isArchived === true) {
+            throw new ApiError(StatusCodes.CONFLICT, 'Card is already archived.')
+          }
+          if (updateData.isArchived === false && targetCard.isArchived === false) {
+            throw new ApiError(StatusCodes.CONFLICT, 'Card is already restored.')
+          }
+        }
+
         if (Object.keys(updateData).length === 0) return targetCard
+
+        if (updateData.isArchived === false && targetCard.isArchived === true) {
+          const column = await columnModel.findOneById(targetCard.columnId)
+          const cardIdStr = targetCard._id.toString()
+          const isIdInOrder = column?.cardOrderIds?.some(id => id.toString() === cardIdStr)
+          if (column && !isIdInOrder) {
+            await columnModel.pushCardOrderIds(targetCard)
+          }
+        }
 
         const activityEvents = buildFieldActivityEvents(targetCard, updateData)
 
