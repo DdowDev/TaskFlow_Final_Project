@@ -48,7 +48,8 @@ const update = async (req, res, next) => {
     type: Joi.string().valid(...Object.values(BOARD_TYPES)),
     columnOrderIds: Joi.array().items(
       Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
-    )
+    ),
+    isArchived: Joi.boolean().optional()
   })
 
   try {

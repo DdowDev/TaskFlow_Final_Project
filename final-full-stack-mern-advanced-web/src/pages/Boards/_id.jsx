@@ -4,6 +4,10 @@ import Box from '@mui/material/Box'
 import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
 import Fade from '@mui/material/Fade'
+import Card from '@mui/material/Card'
+import CardContent from '@mui/material/CardContent'
+import Typography from '@mui/material/Typography'
+import Stack from '@mui/material/Stack'
 import AppBar from '~/components/AppBar/AppBar'
 import BoardBar from './BoardBar/BoardBar'
 import BoardContent from './BoardContent/BoardContent'
@@ -19,10 +23,11 @@ import { cloneDeep } from 'lodash'
 import {
   fetchBoardDetailsAPI,
   updateCurrentActiveBoard,
-  selectCurrentActiveBoard
+  selectCurrentActiveBoard,
+  clearCurrentActiveBoard
 } from '~/redux/activeBoard/activeBoardSlice'
 import { useDispatch, useSelector } from 'react-redux'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams, Link } from 'react-router-dom'
 import PageLoadingSpinner from '~/components/Loading/PageLoadingSpinner'
 import ActiveCard from '~/components/Modal/ActiveCard/ActiveCard'
 import { selectCurrentUser } from '~/redux/user/userSlice'
@@ -139,6 +144,10 @@ function Board() {
   useEffect(() => {
     // Call API
     dispatch(fetchBoardDetailsAPI(boardId))
+
+    return () => {
+      dispatch(clearCurrentActiveBoard())
+    }
   }, [dispatch, boardId])
 
   useEffect(() => {
@@ -327,6 +336,45 @@ function Board() {
 
   if (!board) {
     return <PageLoadingSpinner caption="Loading Board..." />
+  }
+
+  if (board.isArchived) {
+    return (
+      <Box sx={{
+        height: '100vh',
+        display: 'grid',
+        placeItems: 'center',
+        background: (theme) => theme.palette.mode === 'dark'
+          ? 'linear-gradient(145deg, #1a1e2a 0%, #1e2335 50%, #1a2040 100%)'
+          : 'linear-gradient(160deg, #1565c0 0%, #1976d2 40%, #1e88e5 100%)'
+      }}>
+        <Card sx={{
+          maxWidth: 480,
+          p: 3,
+          textAlign: 'center',
+          borderRadius: 2,
+          boxShadow: 3
+        }}>
+          <CardContent>
+            <Typography variant="h5" sx={{ fontWeight: 800, mb: 2 }}>
+              This board has been archived.
+            </Typography>
+            <Typography color="text.secondary" sx={{ mb: 3 }}>
+              The board owner has archived this board. All board data remains safe, and the board can be restored at any time by the owner.
+            </Typography>
+            <Stack direction="row" spacing={2} justifyContent="center">
+              <Button
+                variant="outlined"
+                component={Link}
+                to="/boards"
+              >
+                Back to Boards
+              </Button>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Box>
+    )
   }
 
   const isBoardOwner = board?.owners?.some(owner => owner._id === currentUser?._id)

@@ -23,9 +23,16 @@ const verifyBoardOwnerOrMember = (userId, board) => {
   }
 }
 
+const assertBoardNotArchived = (board) => {
+  if (board.isArchived) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'This board has been archived and cannot be modified.')
+  }
+}
+
 const createNew = async (userId, reqBody) => {
   try {
     const board = await getBoardOrThrow(reqBody.boardId)
+    assertBoardNotArchived(board)
     verifyBoardOwner(userId, board)
 
     // Xử lý logic dữ liệu tùy đặc thù dự án
@@ -53,6 +60,7 @@ const update = async (userId, columnId, reqBody) => {
     if (!targetColumn) throw new ApiError(StatusCodes.NOT_FOUND, 'Column not found!')
 
     const board = await getBoardOrThrow(targetColumn.boardId)
+    assertBoardNotArchived(board)
     const isCardOrderOnlyUpdate = Object.keys(reqBody).every(fieldName => fieldName === 'cardOrderIds')
     if (isCardOrderOnlyUpdate) {
       verifyBoardOwnerOrMember(userId, board)
@@ -79,6 +87,7 @@ const deleteItem = async (userId, columnId) => {
     }
 
     const board = await getBoardOrThrow(targetColumn.boardId)
+    assertBoardNotArchived(board)
     verifyBoardOwner(userId, board)
 
     // Xóa Column

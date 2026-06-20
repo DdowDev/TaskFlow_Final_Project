@@ -7,15 +7,15 @@ const COLUMN_HEADER_HEIGHT = '50px'
 const COLUMN_FOOTER_HEIGHT = '56px'
 
 // ── Brand & accent tokens ──────────────────────────────────────────
-const BRAND = '#6366f1'        // indigo-500
-const BRAND_LIGHT = '#818cf8'  // indigo-400
-const BRAND_DARK = '#4f46e5'   // indigo-600
+const BRAND = '#6366f1' // indigo-500
+const BRAND_LIGHT = '#818cf8' // indigo-400
+const BRAND_DARK = '#4f46e5' // indigo-600
 
 // Dark surface layers
-const BG_BASE     = '#0d0f14'
-const BG_SURFACE  = '#13161e'
+const BG_BASE = '#0d0f14'
+const BG_SURFACE = '#13161e'
 const BG_ELEVATED = '#1a1e2a'
-const BG_CARD     = '#1f2436'
+const BG_CARD = '#1f2436'
 
 // ── Theme ──────────────────────────────────────────────────────────
 const theme = extendTheme({
@@ -153,10 +153,10 @@ const theme = extendTheme({
         },
         containedPrimary: {
           background: `linear-gradient(135deg, ${BRAND}, #8b5cf6)`,
-          boxShadow: `0 4px 14px rgba(99,102,241,0.3)`,
+          boxShadow: '0 4px 14px rgba(99,102,241,0.3)',
           '&:hover': {
             background: `linear-gradient(135deg, ${BRAND_LIGHT}, #a78bfa)`,
-            boxShadow: `0 4px 20px rgba(99,102,241,0.45)`
+            boxShadow: '0 4px 20px rgba(99,102,241,0.45)'
           }
         }
       }

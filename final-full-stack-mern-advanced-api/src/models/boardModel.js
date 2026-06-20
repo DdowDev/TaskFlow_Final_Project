@@ -38,10 +38,11 @@ const BOARD_COLLECTION_SCHEMA = Joi.object({
 
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').default(null),
-  _destroy: Joi.boolean().default(false)
+  _destroy: Joi.boolean().default(false),
+  isArchived: Joi.boolean().default(false)
 })
 
-const ALLOWED_UPDATE_FIELDS = ['title', 'description', 'type', 'columnOrderIds', 'updatedAt']
+const ALLOWED_UPDATE_FIELDS = ['title', 'description', 'type', 'columnOrderIds', 'updatedAt', 'isArchived']
 
 const validateBeforeCreate = async (data) => {
   return await BOARD_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
@@ -165,6 +166,7 @@ const update = async (boardId, updateData) => {
 
 const getBoards = async (userId, page, itemsPerPage, queryFilters) => {
   try {
+    let hasArchivedFilter = false
     const queryConditions = [
       // Điều kiện 01: Board chưa bị xóa
       { _destroy: false },
@@ -178,14 +180,17 @@ const getBoards = async (userId, page, itemsPerPage, queryFilters) => {
     // Xử lý query filter cho từng trường hợp search board, ví dụ search theo title
     if (queryFilters) {
       Object.keys(queryFilters).forEach(key => {
-        // queryFilters[key] ví dụ queryFilters[title] nếu phía FE đẩy lên q[title]
-
-        // Có phân biệt chữ hoa chữ thường
-        // queryConditions.push({ [key]: { $regex: queryFilters[key] } })
-
-        // Không phân biệt chữ hoa chữ thường
-        queryConditions.push({ [key]: { $regex: new RegExp(queryFilters[key], 'i') } })
+        if (key === 'isArchived') {
+          hasArchivedFilter = true
+          queryConditions.push({ isArchived: queryFilters[key] === 'true' })
+        } else {
+          queryConditions.push({ [key]: { $regex: new RegExp(queryFilters[key], 'i') } })
+        }
       })
+    }
+
+    if (!hasArchivedFilter) {
+      queryConditions.push({ isArchived: { $ne: true } })
     }
 
     const query = await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate(

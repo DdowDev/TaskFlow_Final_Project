@@ -45,6 +45,12 @@ const verifyBoardOwnerOrMember = (userId, board) => {
   }
 }
 
+const assertBoardNotArchived = (board) => {
+  if (board.isArchived) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'This board has been archived and cannot be modified.')
+  }
+}
+
 const isSameId = (firstId, secondId) => firstId?.toString() === secondId?.toString()
 const hasOwn = (target, fieldName) => Object.prototype.hasOwnProperty.call(target, fieldName)
 
@@ -440,6 +446,7 @@ const createNew = async (userInfo, reqBody) => {
     if (!isSameId(board._id, column.boardId)) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Column was not found in this board!')
     }
+    assertBoardNotArchived(board)
     verifyBoardOwnerOrMember(userId, board)
 
     const createdAt = Date.now()
@@ -482,6 +489,7 @@ const update = async (cardId, reqBody, cardCoverFile, userInfo) => {
     if (!targetCard) throw new ApiError(StatusCodes.NOT_FOUND, 'Card not found!')
 
     const board = await getBoardOrThrow(targetCard.boardId)
+    assertBoardNotArchived(board)
     verifyBoardOwnerOrMember(userInfo._id, board)
 
     const activityAt = Date.now()

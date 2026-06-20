@@ -26,16 +26,16 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts'
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove'
 import { Tooltip } from '@mui/material'
-import { capitalizeFirstLetter } from '~/utils/formatters'
 import BoardUserGroup from './BoardUserGroup'
 import InviteBoardUser from './InviteBoardUser'
 import BoardFilterPanel from './BoardFilterPanel'
 import { useDispatch, useSelector } from 'react-redux'
 import { selectCurrentUser } from '~/redux/user/userSlice'
-import { fetchBoardDetailsAPI, updateCurrentActiveBoard } from '~/redux/activeBoard/activeBoardSlice'
+import { fetchBoardDetailsAPI, updateCurrentActiveBoard, clearCurrentActiveBoard } from '~/redux/activeBoard/activeBoardSlice'
 import { removeBoardMemberAPI, updateBoardDetailsAPI } from '~/apis'
 import { toast } from 'react-toastify'
 import { useConfirm } from 'material-ui-confirm'
+import { useNavigate } from 'react-router-dom'
 
 const MENU_STYLES = {
   color: 'white',
@@ -57,9 +57,6 @@ const VIEW_CHIP_STYLES = (isActive) => ({
   border: '1px solid rgba(255, 255, 255, 0.24)',
   fontWeight: isActive ? 700 : 500
 })
-
-
-
 const getUserDisplayName = (user) => user?.displayName || user?.username || user?.email || 'Unknown user'
 const getUserId = (user) => user?._id?.toString?.() || user?._id
 
@@ -135,7 +132,8 @@ function BoardInfoDialog({
   removingMemberId,
   onClose,
   onOpenEdit,
-  onRemoveMember
+  onRemoveMember,
+  onArchive
 }) {
   const owners = Array.isArray(board?.owners) ? board.owners : []
   const members = Array.isArray(board?.members) ? board.members : []
@@ -207,14 +205,23 @@ function BoardInfoDialog({
                   <Typography variant="body2" color="text.secondary">
                     You are the board owner. You can update board information from here.
                   </Typography>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    sx={{ mt: 1.25 }}
-                    onClick={onOpenEdit}
-                  >
-                    Edit board
-                  </Button>
+                  <Stack direction="row" spacing={1.25} sx={{ mt: 1.25 }}>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={onOpenEdit}
+                    >
+                      Edit board
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="warning"
+                      onClick={onArchive}
+                    >
+                      Archive board
+                    </Button>
+                  </Stack>
                 </Box>
               </Stack>
             </Paper>
@@ -330,7 +337,9 @@ function BoardBar({
   filterActiveCount = 0
 }) {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const confirmRemoveMember = useConfirm()
+  const confirmArchiveBoard = useConfirm()
   const currentUser = useSelector(selectCurrentUser)
   const isBoardOwner = board?.owners?.some(owner => getUserId(owner) === getUserId(currentUser))
   const [filterAnchorEl, setFilterAnchorEl] = useState(null)
@@ -398,6 +407,33 @@ function BoardBar({
           })
           .finally(() => {
             setRemovingMemberId(null)
+          })
+      })
+      .catch(() => {})
+  }
+
+  const handleArchiveBoard = () => {
+    confirmArchiveBoard({
+      title: 'Archive Board',
+      description: 'Board sẽ bị lưu trữ và ẩn khỏi danh sách làm việc. Dữ liệu sẽ không bị xoá. Bao gồm: Columns, Cards, Members, Activity Logs, Invitations. Bạn có thể khôi phục bất kỳ lúc nào.',
+      confirmationText: 'Archive',
+      cancellationText: 'Cancel',
+      confirmationButtonProps: { variant: 'contained', color: 'warning' }
+    })
+      .then(() => {
+        setIsSavingBoard(true)
+        updateBoardDetailsAPI(board._id, { isArchived: true })
+          .then(() => {
+            toast.success('Board archived successfully.')
+            setIsBoardInfoOpen(false)
+            dispatch(clearCurrentActiveBoard())
+            navigate('/boards')
+          })
+          .catch(error => {
+            toast.error(error?.response?.data?.message || 'Could not archive board')
+          })
+          .finally(() => {
+            setIsSavingBoard(false)
           })
       })
       .catch(() => {})
@@ -498,6 +534,7 @@ function BoardBar({
         onClose={() => setIsBoardInfoOpen(false)}
         onOpenEdit={handleOpenEditBoard}
         onRemoveMember={handleRemoveBoardMember}
+        onArchive={handleArchiveBoard}
       />
 
       <EditBoardDialog

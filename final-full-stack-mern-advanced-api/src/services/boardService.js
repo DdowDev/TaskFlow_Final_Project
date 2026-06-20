@@ -30,6 +30,12 @@ const verifyBoardOwnerOrMember = (userId, board) => {
 
 const isSameId = (firstId, secondId) => firstId?.toString() === secondId?.toString()
 
+const assertBoardNotArchived = (board) => {
+  if (board.isArchived) {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'This board has been archived and cannot be modified.')
+  }
+}
+
 const createNew = async (userId, reqBody) => {
   try {
     // Xử lý logic dữ liệu tùy đặc thù dự án
@@ -93,6 +99,15 @@ const update = async (userId, boardId, reqBody) => {
     const board = await getBoardOrThrow(boardId)
     verifyBoardOwner(userId, board)
 
+    // Chỉ cho phép restore (isArchived: false) khi board đang bị lưu trữ.
+    // Mọi update khác trên board đã archive đều bị từ chối.
+    if (board.isArchived) {
+      const isRestoreOnly = Object.keys(reqBody).length === 1 && reqBody.isArchived === false
+      if (!isRestoreOnly) {
+        throw new ApiError(StatusCodes.FORBIDDEN, 'This board has been archived and cannot be modified.')
+      }
+    }
+
     const updateData = {
       ...reqBody,
       updatedAt: Date.now()
@@ -110,6 +125,7 @@ const removeMember = async (userId, boardId, memberId) => {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found!')
     }
 
+    assertBoardNotArchived(board)
     verifyBoardOwner(userId, board)
 
     if (isSameId(userId, memberId)) {
@@ -155,6 +171,7 @@ const moveCardToDifferentColumn = async (userInfo, reqBody) => {
     }
 
     const board = await getBoardOrThrow(currentCard.boardId)
+    assertBoardNotArchived(board)
     verifyBoardOwnerOrMember(userId, board)
 
     // B1: Cập nhật mảng cardOrderIds của Column ban đầu chứa nó (Hiểu bản chất là xóa cái _id của Card ra khỏi mảng)

@@ -33,12 +33,12 @@ import ToggleFocusInput from '~/components/Form/ToggleFocusInput'
 
 // ── Column accent colors (cycling by index) ────────────────────────
 const COLUMN_ACCENTS = [
-  { color: '#3b82f6', glow: 'rgba(59,130,246,0.6)',  bg: 'rgba(59,130,246,0.06)'  }, // blue
-  { color: '#a855f7', glow: 'rgba(168,85,247,0.6)',  bg: 'rgba(168,85,247,0.06)'  }, // purple
-  { color: '#f59e0b', glow: 'rgba(245,158,11,0.6)',  bg: 'rgba(245,158,11,0.06)'  }, // amber
-  { color: '#10b981', glow: 'rgba(16,185,129,0.6)',  bg: 'rgba(16,185,129,0.06)'  }, // emerald
-  { color: '#ec4899', glow: 'rgba(236,72,153,0.6)',  bg: 'rgba(236,72,153,0.06)'  }, // pink
-  { color: '#06b6d4', glow: 'rgba(6,182,212,0.6)',   bg: 'rgba(6,182,212,0.06)'   }  // cyan
+  { color: '#3b82f6', glow: 'rgba(59,130,246,0.6)', bg: 'rgba(59,130,246,0.06)' }, // blue
+  { color: '#a855f7', glow: 'rgba(168,85,247,0.6)', bg: 'rgba(168,85,247,0.06)' }, // purple
+  { color: '#f59e0b', glow: 'rgba(245,158,11,0.6)', bg: 'rgba(245,158,11,0.06)' }, // amber
+  { color: '#10b981', glow: 'rgba(16,185,129,0.6)', bg: 'rgba(16,185,129,0.06)' }, // emerald
+  { color: '#ec4899', glow: 'rgba(236,72,153,0.6)', bg: 'rgba(236,72,153,0.06)' }, // pink
+  { color: '#06b6d4', glow: 'rgba(6,182,212,0.6)', bg: 'rgba(6,182,212,0.06)' } // cyan
 ]
 
 function Column({ column, columnIndex = 0, canManageColumns = false, isDragDisabled = false }) {

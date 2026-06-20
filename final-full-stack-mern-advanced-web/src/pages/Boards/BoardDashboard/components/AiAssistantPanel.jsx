@@ -616,9 +616,9 @@ function AiAssistantPanel({
                       reason={topRisk.reason}
                       actionLabel="Lọc"
                       onAction={() => {
-                      const riskFilter = buildFilterFromRisk(topRisk)
-                      if (Object.keys(riskFilter).length > 0) onDrillDown(riskFilter)
-                    }}
+                        const riskFilter = buildFilterFromRisk(topRisk)
+                        if (Object.keys(riskFilter).length > 0) onDrillDown(riskFilter)
+                      }}
                     />
                   }
 
