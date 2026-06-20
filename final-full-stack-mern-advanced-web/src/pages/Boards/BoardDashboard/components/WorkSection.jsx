@@ -91,12 +91,12 @@ const getRelativeDueDate = (value) => {
   return { label: `còn ${days}d`, color: 'default', variant: 'outlined' }
 }
 
-function SectionCard({ title, count, emptyText, children }) {
+function SectionCard({ title, count, emptyText, onAction, children }) {
   return (
     <Paper
       elevation={0}
       sx={{
-        p: 2,
+        p: 1.75,
         height: '100%',
         border: (theme) =>
           theme.palette.mode === 'dark'
@@ -110,9 +110,31 @@ function SectionCard({ title, count, emptyText, children }) {
             : '0 2px 12px rgba(0,0,0,0.06)'
       }}
     >
-      <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1} sx={{ mb: 1.5 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>{title}</Typography>
-        <Chip size="small" label={count} sx={{ height: 22, fontWeight: 800 }} />
+      <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1} sx={{ mb: 1.25 }}>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>{title}</Typography>
+          <Chip size="small" label={count} sx={{ height: 18, fontSize: 10, fontWeight: 800 }} />
+        </Stack>
+        {onAction && count > 5 && (
+          <ButtonBase
+            onClick={onAction}
+            sx={{
+              fontSize: '11px',
+              fontWeight: 800,
+              color: 'primary.main',
+              borderRadius: 1,
+              px: 0.75,
+              py: 0.25,
+              bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+              '&:hover': {
+                bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+                textDecoration: 'underline'
+              }
+            }}
+          >
+            View All ({count})
+          </ButtonBase>
+        )}
       </Stack>
 
       {count === 0
@@ -180,8 +202,8 @@ function CardListItem({ card, onClick }) {
       <Box
         sx={{
           width: '100%',
-          px: 1.5,
-          py: 1.25,
+          px: 1.25,
+          py: 1,
           borderRadius: 1.5,
           bgcolor: (theme) => theme.palette.mode === 'dark' ? '#13161e' : '#f8fafc',
           border: (theme) =>
@@ -263,7 +285,7 @@ function WorkloadRow({ member, maxCards, onMemberClick }) {
       <Box
         sx={{
           width: '100%',
-          p: 1.25,
+          p: 1,
           borderRadius: 1.5,
           bgcolor: (theme) => theme.palette.mode === 'dark' ? '#13161e' : '#f8fafc',
           border: (theme) =>
@@ -292,7 +314,7 @@ function WorkloadRow({ member, maxCards, onMemberClick }) {
       <Box
         sx={{
           width: '100%',
-          p: 1.25,
+          p: 1,
           borderRadius: 1.5,
           bgcolor: (theme) => theme.palette.mode === 'dark' ? '#13161e' : '#f8fafc',
           border: (theme) =>
@@ -319,7 +341,23 @@ function WorkSection({ overdueCards, dueSoonCards, memberWorkload, onDrillDown }
   const safeOverdueCards = Array.isArray(overdueCards) ? overdueCards : []
   const safeDueSoonCards = Array.isArray(dueSoonCards) ? dueSoonCards : []
   const safeMemberWorkload = Array.isArray(memberWorkload) ? memberWorkload : []
-  const maxCards = Math.max(...safeMemberWorkload.map(member => getNumber(member.totalCards)), 1)
+
+  const displayOverdue = safeOverdueCards
+    .slice()
+    .sort((a, b) => getNumber(a.dueDate) - getNumber(b.dueDate))
+    .slice(0, 5)
+
+  const displayDueSoon = safeDueSoonCards
+    .slice()
+    .sort((a, b) => getNumber(a.dueDate) - getNumber(b.dueDate))
+    .slice(0, 5)
+
+  const displayWorkload = safeMemberWorkload
+    .slice()
+    .sort((a, b) => getNumber(b.totalCards) - getNumber(a.totalCards))
+    .slice(0, 5)
+
+  const maxCards = Math.max(...displayWorkload.map(member => getNumber(member.totalCards)), 1)
 
   return (
     <Grid container spacing={1.5}>
@@ -328,13 +366,14 @@ function WorkSection({ overdueCards, dueSoonCards, memberWorkload, onDrillDown }
           title="Overdue"
           count={safeOverdueCards.length}
           emptyText="Không có công việc quá hạn."
+          onAction={() => onDrillDown({ overdue: true, dueSoon: false })}
         >
-          <Stack spacing={1}>
-            {safeOverdueCards.map(card => (
+          <Stack spacing={0.75}>
+            {displayOverdue.map(card => (
               <CardListItem
                 key={card?._id || card?.title}
                 card={card}
-                onClick={() => onDrillDown({ overdue: true, dueSoon: false })}
+                onClick={() => onDrillDown({ cardIds: [card._id] })}
               />
             ))}
           </Stack>
@@ -346,13 +385,14 @@ function WorkSection({ overdueCards, dueSoonCards, memberWorkload, onDrillDown }
           title="Due Soon"
           count={safeDueSoonCards.length}
           emptyText="Không có công việc sắp đến hạn."
+          onAction={() => onDrillDown({ dueSoon: true, overdue: false })}
         >
-          <Stack spacing={1}>
-            {safeDueSoonCards.map(card => (
+          <Stack spacing={0.75}>
+            {displayDueSoon.map(card => (
               <CardListItem
                 key={card?._id || card?.title}
                 card={card}
-                onClick={() => onDrillDown({ dueSoon: true, overdue: false })}
+                onClick={() => onDrillDown({ cardIds: [card._id] })}
               />
             ))}
           </Stack>
@@ -365,8 +405,8 @@ function WorkSection({ overdueCards, dueSoonCards, memberWorkload, onDrillDown }
           count={safeMemberWorkload.length}
           emptyText="Chưa có thành viên được gán công việc."
         >
-          <Stack spacing={1.5}>
-            {safeMemberWorkload.map(member => (
+          <Stack spacing={1}>
+            {displayWorkload.map(member => (
               <WorkloadRow
                 key={getMemberId(member) || member?.email || member?.displayName}
                 member={member}
