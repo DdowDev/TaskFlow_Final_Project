@@ -15,7 +15,6 @@ import { CARD_STATUSES } from '~/utils/constants'
 const getNumber = (value) => Number.isFinite(Number(value)) ? Number(value) : 0
 
 function KpiCard({ icon, label, value, suffix, accentColor, onClick }) {
-  const theme = useTheme()
   const isClickable = Boolean(onClick)
 
   const content = (

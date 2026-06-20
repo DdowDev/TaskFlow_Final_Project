@@ -14,8 +14,8 @@ const BRAND_DARK = '#4f46e5' // indigo-600
 // Dark surface layers
 const BG_BASE = '#0d0f14'
 const BG_SURFACE = '#13161e'
-const BG_ELEVATED = '#1a1e2a'
-const BG_CARD = '#1f2436'
+// const BG_ELEVATED = '#1a1e2a'
+// const BG_CARD = '#1f2436'
 
 // ── Theme ──────────────────────────────────────────────────────────
 const theme = extendTheme({

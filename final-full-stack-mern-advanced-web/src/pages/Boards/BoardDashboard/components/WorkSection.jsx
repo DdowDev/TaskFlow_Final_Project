@@ -7,7 +7,7 @@ import LinearProgress from '@mui/material/LinearProgress'
 import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
-import { alpha, useTheme } from '@mui/material/styles'
+import { alpha } from '@mui/material/styles'
 import { CARD_PRIORITIES, CARD_STATUSES } from '~/utils/constants'
 
 const HOUR = 60 * 60 * 1000
@@ -167,8 +167,6 @@ function DueChip({ dueDate }) {
 }
 
 function CardListItem({ card, onClick }) {
-  const theme = useTheme()
-
   return (
     <ButtonBase
       onClick={onClick}
