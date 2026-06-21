@@ -1,3 +1,9 @@
+import dns from 'dns'
+
+// Ưu tiên DNS Cloudflare và Google
+dns.setServers(['1.1.1.1', '8.8.8.8'])
+
+
 import { MongoClient, ServerApiVersion } from 'mongodb'
 import { env } from '~/config/environment'
 
